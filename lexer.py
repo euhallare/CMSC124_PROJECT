@@ -11,25 +11,24 @@ import re
 import sys
 
 
-# ─── TOKEN TYPES ──────────────────────────────────────────────────────────────
+#TOKEN TYPES
 
 TT_KEYWORD    = 'KEYWORD'
 TT_IDENTIFIER = 'IDENTIFIER'
-TT_NUMBR      = 'NUMBR'      # integer literal
-TT_NUMBAR     = 'NUMBAR'     # float literal
-TT_YARN       = 'YARN'       # string literal
-TT_TROOF      = 'TROOF'      # boolean literal (WIN / FAIL)
-TT_TYPE       = 'TYPE'       # type literal (NUMBR, NUMBAR, etc. used in typecast)
-TT_SEPARATOR  = 'SEPARATOR'  # + used in VISIBLE
+TT_NUMBR      = 'NUMBR'      #integer literal
+TT_NUMBAR     = 'NUMBAR'     #float literal
+TT_YARN       = 'YARN'       #string literal
+TT_TROOF      = 'TROOF'      #boolean literal (WIN / FAIL)
+TT_TYPE       = 'TYPE'       #type literal (NUMBR, NUMBAR, etc. used in typecast)
+TT_SEPARATOR  = 'SEPARATOR'  #+ used in VISIBLE
 TT_COMMENT    = 'COMMENT'
 TT_NEWLINE    = 'NEWLINE'
 TT_EOF        = 'EOF'
 TT_UNKNOWN    = 'UNKNOWN'
 
 
-# ─── KEYWORDS ─────────────────────────────────────────────────────────────────
-# Ordered longest-first to avoid partial matches (e.g. "I IZ" before "I HAS A")
-
+#KEYWORDS
+#ordered longest-first to avoid partial matches (e.g. "I IZ" before "I HAS A")
 KEYWORDS = [
     'BOTH SAEM', 'BOTH OF',
     'EITHER OF',
@@ -72,15 +71,14 @@ KEYWORDS = [
     'A',
 ]
 
-# Type literals used in typecasting
+#type literals used in typecasting
 TYPE_LITERALS = {'TROOF', 'NOOB', 'NUMBR', 'NUMBAR', 'YARN', 'TYPE'}
 
-# Boolean literals
+#boolean literals
 TROOF_LITERALS = {'WIN', 'FAIL'}
 
 
-# ─── TOKEN CLASS ──────────────────────────────────────────────────────────────
-
+#token class to represent a single token with its type, value, and line number
 class Token:
     def __init__(self, token_type, value, line_num):
         self.token_type = token_type
@@ -91,7 +89,7 @@ class Token:
         return f'Token({self.token_type}, {repr(self.value)}, line={self.line_num})'
 
 
-# ─── LEXER CLASS ──────────────────────────────────────────────────────────────
+#lexer class to tokenize LOLCODE source code
 
 class Lexer:
     def __init__(self, source_code):
@@ -109,7 +107,7 @@ class Lexer:
             line_num = i + 1
             line     = raw_line.strip()
 
-            # ── TLDR closes a multi-line comment ──────────────────────────────
+            #TLDR closes a multi-line comment
             if in_multiline_comment:
                 if re.fullmatch(r'TLDR(\s+BTW.*)?', line) or line == 'TLDR':
                     self.tokens.append(Token(TT_COMMENT, 'TLDR', line_num))
@@ -119,20 +117,20 @@ class Lexer:
                 i += 1
                 continue
 
-            # ── Empty line ────────────────────────────────────────────────────
+            #empty line
             if not line:
                 self.tokens.append(Token(TT_NEWLINE, '\\n', line_num))
                 i += 1
                 continue
 
-            # ── OBTW opens a multi-line comment ───────────────────────────────
+            #OBTW opens a multi-line comment
             if re.fullmatch(r'OBTW(\s+.*)?', line):
                 self.tokens.append(Token(TT_COMMENT, line, line_num))
                 in_multiline_comment = True
                 i += 1
                 continue
 
-            # ── Tokenize the line ─────────────────────────────────────────────
+            #tokenize the line
             line_tokens = self._tokenize_line(line, line_num)
             self.tokens.extend(line_tokens)
             self.tokens.append(Token(TT_NEWLINE, '\\n', line_num))
@@ -146,46 +144,46 @@ class Lexer:
         pos    = 0
 
         while pos < len(line):
-            # Skip whitespace
+            #skip whitespace
             if line[pos] == ' ':
                 pos += 1
                 continue
 
             remaining = line[pos:]
 
-            # ── Inline comment (BTW) ──────────────────────────────────────────
+            #inline comment (BTW)
             if re.match(r'^BTW\b', remaining):
                 tokens.append(Token(TT_COMMENT, remaining, line_num))
-                break  # rest of line is comment
+                break  #rest of line is comment
 
-            # ── YARN literal (string in double quotes) ────────────────────────
+            #YARN literal
             yarn_match = re.match(r'^"[^"]*"', remaining)
             if yarn_match:
                 tokens.append(Token(TT_YARN, yarn_match.group(), line_num))
                 pos += yarn_match.end()
                 continue
 
-            # ── NUMBAR literal (float) ────────────────────────────────────────
+            #NUMBAR literal (float)
             numbar_match = re.match(r'^-?[0-9]+\.[0-9]+', remaining)
             if numbar_match:
                 tokens.append(Token(TT_NUMBAR, numbar_match.group(), line_num))
                 pos += numbar_match.end()
                 continue
 
-            # ── NUMBR literal (integer) ───────────────────────────────────────
+            #NUMBR literal
             numbr_match = re.match(r'^-?[0-9]+(?![.\w])', remaining)
             if numbr_match:
                 tokens.append(Token(TT_NUMBR, numbr_match.group(), line_num))
                 pos += numbr_match.end()
                 continue
 
-            # ── Separator (+) ─────────────────────────────────────────────────
+            #separators 
             if remaining[0] == '+':
                 tokens.append(Token(TT_SEPARATOR, '+', line_num))
                 pos += 1
                 continue
 
-            # ── Keywords (longest match first) ────────────────────────────────
+            #keywords (longest-first to avoid partial matches)
             matched_keyword = False
             for kw in KEYWORDS:
                 pattern = r'^' + re.escape(kw) + r'(?=\s|$)'
@@ -198,7 +196,7 @@ class Lexer:
             if matched_keyword:
                 continue
 
-            # ── Identifiers / type literals / troof literals / keywords ───────
+            #identifiers (start with letter, followed by letters, digits, or underscores)
             ident_match = re.match(r'^[a-zA-Z][a-zA-Z0-9_]*', remaining)
             if ident_match:
                 word = ident_match.group()
@@ -211,16 +209,14 @@ class Lexer:
                 pos += ident_match.end()
                 continue
 
-            # ── Unknown character ─────────────────────────────────────────────
+            #for any unrecognized token, report an error and create an UNKNOWN token
             self.errors.append(f'Line {line_num}: Unknown token: {repr(remaining[0])}')
             tokens.append(Token(TT_UNKNOWN, remaining[0], line_num))
             pos += 1
 
         return tokens
 
-
-# ─── PRETTY PRINTER ───────────────────────────────────────────────────────────
-
+#function to print the list of tokens in a formatted table
 def print_tokens(tokens):
     print(f'\n{"─"*55}')
     print(f'  {"LINE":<6} {"TYPE":<14} {"VALUE"}')
@@ -232,8 +228,7 @@ def print_tokens(tokens):
     print(f'{"─"*55}\n')
 
 
-# ─── MAIN ─────────────────────────────────────────────────────────────────────
-
+#main function to run the lexer on a given file
 def main():
     if len(sys.argv) < 2:
         print('Usage: python3 lexer.py <file.lol>')
