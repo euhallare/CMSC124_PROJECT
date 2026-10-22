@@ -13,7 +13,7 @@ import os
 from lexer import Lexer, TT_NEWLINE, TT_EOF
 
 
-# ── colour palette ──────────────────────────────────────────────────────────
+#colour palette
 BG_DARK    = "#1e1e2e"   # main background
 BG_PANEL   = "#27273a"   # panel / frame background
 BG_EDITOR  = "#1a1a2a"   # code editor background
@@ -43,3 +43,31 @@ class App:
 
         self._build_ui()
 
+    #UI construction 
+
+    def _build_ui(self):
+        """Build all panels."""
+        #top toolbar
+        self._build_toolbar()
+
+        #main pane: left column | right column
+        main = tk.PanedWindow(self.root, orient=tk.HORIZONTAL,
+                              bg=BG_DARK, sashwidth=5, sashrelief=tk.FLAT)
+        main.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
+
+        #left column: file explorer + text editor
+        left = tk.Frame(main, bg=BG_DARK)
+        main.add(left, minsize=350)
+
+        self._build_file_explorer(left)
+        self._build_editor(left)
+
+        #right column: token list | symbol table | console
+        right = tk.Frame(main, bg=BG_DARK)
+        main.add(right, minsize=400)
+
+        self._build_token_table(right)
+        self._build_symbol_table(right)
+        self._build_console(right)
+
+    
