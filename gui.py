@@ -325,7 +325,7 @@ class App:
         self._update_line_numbers()
         self._log(f"Loaded: {path}\n", tag="dim")
 
-    #function to log messages to the console
+    #function to log messages to the console.
     def _run(self):
         """Lex the current editor content and populate the token table."""
         source = self.editor.get("1.0", tk.END)
@@ -366,3 +366,18 @@ class App:
 
         #ML2/ML3: parser and interpreter calls will go here later (pag nagawa na obviously)
         #might consider making new files.
+
+    #console helpers
+
+    def _log(self, text: str, tag: str = ""):
+        self.console.config(state=tk.NORMAL)
+        if tag:
+            self.console.insert(tk.END, text, tag)
+        else:
+            self.console.insert(tk.END, text)
+        self.console.see(tk.END)
+        self.console.config(state=tk.DISABLED)
+
+    def _clear_tree(self, tree: ttk.Treeview):
+        for item in tree.get_children():
+            tree.delete(item)
