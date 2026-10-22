@@ -70,4 +70,44 @@ class App:
         self._build_symbol_table(right)
         self._build_console(right)
 
-    
+    #toolbar
+
+    def _build_toolbar(self):
+        bar = tk.Frame(self.root, bg=BG_PANEL, height=48)
+        bar.pack(fill=tk.X, padx=8, pady=(8, 4))
+        bar.pack_propagate(False)
+
+        title = tk.Label(bar, text="LOLCode Interpreter",
+                         bg=BG_PANEL, fg=FG_ACCENT,
+                         font=FONT_TITLE)
+        title.pack(side=tk.LEFT, padx=12)
+
+        #Run button — right side
+        self.run_btn = tk.Button(
+            bar, text="▶  Execute / Run",
+            command=self._run,
+            bg=FG_GREEN, fg=BG_DARK,
+            font=FONT_HEAD,
+            relief=tk.FLAT, padx=16, pady=4,
+            cursor="hand2",
+            activebackground="#7dc97a", activeforeground=BG_DARK,
+        )
+        self.run_btn.pack(side=tk.RIGHT, padx=12, pady=8)
+
+        #Open file button
+        open_btn = tk.Button(
+            bar, text="📂  Open File",
+            command=self._open_file,
+            bg=BG_HEADER, fg=FG_TEXT,
+            font=FONT_UI,
+            relief=tk.FLAT, padx=12, pady=4,
+            cursor="hand2",
+            activebackground="#4a4a6a", activeforeground=FG_TEXT,
+        )
+        open_btn.pack(side=tk.RIGHT, padx=4, pady=8)
+
+        #current file label
+        self.file_label = tk.Label(bar, text="No file selected",
+                                   bg=BG_PANEL, fg=FG_DIM, font=FONT_UI)
+        self.file_label.pack(side=tk.RIGHT, padx=12)
+
