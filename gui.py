@@ -381,3 +381,14 @@ class App:
     def _clear_tree(self, tree: ttk.Treeview):
         for item in tree.get_children():
             tree.delete(item)
+
+#entry point
+
+def main():
+    root = tk.Tk()
+    app  = App(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
