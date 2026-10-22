@@ -111,3 +111,19 @@ class App:
                                    bg=BG_PANEL, fg=FG_DIM, font=FONT_UI)
         self.file_label.pack(side=tk.RIGHT, padx=12)
 
+    #panel 1 — file explorer
+
+    def _build_file_explorer(self, parent):
+        frame = self._titled_frame(parent, "① File Explorer")
+        frame.pack(fill=tk.X, padx=4, pady=(4, 2))
+
+        inner = tk.Frame(frame, bg=BG_PANEL)
+        inner.pack(fill=tk.X, padx=6, pady=6)
+
+        self.explorer_label = tk.Label(
+            inner,
+            text="No file loaded — click Open File or drag a .lol file",
+            bg=BG_PANEL, fg=FG_DIM, font=FONT_UI,
+            anchor="w", wraplength=340,
+        )
+        self.explorer_label.pack(fill=tk.X)
