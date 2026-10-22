@@ -208,3 +208,46 @@ class App:
         self.symbol_tree = self._make_treeview(frame, cols,
                                                headings=("Variable", "Type", "Value"),
                                                widths=(120, 100, 160))
+
+    #panel 5 — console
+    
+    def _build_console(self, parent):
+        frame = self._titled_frame(parent, "⑤ Console")
+        frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=(2, 4))
+
+        self.console = scrolledtext.ScrolledText(
+            frame,
+            bg="#0d0d1a", fg=FG_TEXT,
+            font=FONT_CODE, relief=tk.FLAT,
+            state=tk.DISABLED,
+            padx=8, pady=4,
+            height=6,
+        )
+        self.console.pack(fill=tk.BOTH, expand=True, padx=6, pady=(4, 2))
+        self.console.tag_config("error", foreground=FG_RED)
+        self.console.tag_config("ok",    foreground=FG_GREEN)
+        self.console.tag_config("dim",   foreground=FG_DIM)
+
+        #input row (for GIMMEH — ML3)
+        input_row = tk.Frame(frame, bg=BG_PANEL)
+        input_row.pack(fill=tk.X, padx=6, pady=(0, 6))
+
+        tk.Label(input_row, text="Input:", bg=BG_PANEL,
+                 fg=FG_DIM, font=FONT_UI).pack(side=tk.LEFT)
+
+        self.console_input = tk.Entry(
+            input_row,
+            bg=BG_EDITOR, fg=FG_TEXT,
+            insertbackground=FG_TEXT,
+            font=FONT_CODE, relief=tk.FLAT,
+        )
+        self.console_input.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(4, 4))
+
+        send_btn = tk.Button(
+            input_row, text="Send",
+            bg=BG_HEADER, fg=FG_TEXT,
+            font=FONT_UI, relief=tk.FLAT,
+            padx=8, cursor="hand2",
+            activebackground="#4a4a6a",
+        )
+        send_btn.pack(side=tk.LEFT)
