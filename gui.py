@@ -127,3 +127,46 @@ class App:
             anchor="w", wraplength=340,
         )
         self.explorer_label.pack(fill=tk.X)
+
+    #panel 2 — text editor
+
+    def _build_editor(self, parent):
+        frame = self._titled_frame(parent, "② Text Editor")
+        frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=(2, 4))
+
+        #line numbers + editor side by side
+        inner = tk.Frame(frame, bg=BG_EDITOR)
+        inner.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
+
+        self.line_numbers = tk.Text(
+            inner, width=4,
+            bg="#16162a", fg=FG_DIM,
+            font=FONT_CODE, relief=tk.FLAT,
+            state=tk.DISABLED, padx=4,
+            selectbackground="#16162a",
+        )
+        self.line_numbers.pack(side=tk.LEFT, fill=tk.Y)
+
+        sb = tk.Scrollbar(inner, orient=tk.VERTICAL)
+        sb.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.editor = tk.Text(
+            inner,
+            bg=BG_EDITOR, fg=FG_TEXT,
+            insertbackground=FG_TEXT,
+            font=FONT_CODE, relief=tk.FLAT,
+            padx=8, pady=4,
+            undo=True, wrap=tk.NONE,
+            yscrollcommand=sb.set,
+        )
+        self.editor.pack(fill=tk.BOTH, expand=True)
+        sb.config(command=self._sync_scroll)
+
+        self.editor.bind("<KeyRelease>", self._update_line_numbers)
+        self.editor.bind("<MouseWheel>", self._on_mousewheel)
+
+        #horizontal scrollbar
+        hb = tk.Scrollbar(frame, orient=tk.HORIZONTAL,
+                           command=self.editor.xview)
+        hb.pack(fill=tk.X, padx=6)
+        self.editor.config(xscrollcommand=hb.set)
