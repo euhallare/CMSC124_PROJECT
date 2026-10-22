@@ -251,3 +251,46 @@ class App:
             activebackground="#4a4a6a",
         )
         send_btn.pack(side=tk.LEFT)
+
+    #helpers
+
+    def _titled_frame(self, parent, title: str) -> tk.LabelFrame:
+        return tk.LabelFrame(
+            parent, text=f"  {title}  ",
+            bg=BG_PANEL, fg=FG_ACCENT,
+            font=FONT_HEAD,
+            relief=tk.FLAT,
+            bd=1,
+        )
+
+    def _make_treeview(self, parent, cols, headings, widths) -> ttk.Treeview:
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("Dark.Treeview",
+                        background=BG_TABLE, foreground=FG_TEXT,
+                        fieldbackground=BG_TABLE, rowheight=24,
+                        font=FONT_CODE)
+        style.configure("Dark.Treeview.Heading",
+                        background=BG_HEADER, foreground=FG_ACCENT,
+                        font=FONT_HEAD, relief=tk.FLAT)
+        style.map("Dark.Treeview",
+                  background=[("selected", BG_HEADER)],
+                  foreground=[("selected", FG_TEXT)])
+
+        container = tk.Frame(parent, bg=BG_PANEL)
+        container.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
+
+        vsb = tk.Scrollbar(container, orient=tk.VERTICAL)
+        vsb.pack(side=tk.RIGHT, fill=tk.Y)
+
+        tree = ttk.Treeview(container, columns=cols, show="headings",
+                            style="Dark.Treeview",
+                            yscrollcommand=vsb.set)
+        vsb.config(command=tree.yview)
+
+        for col, heading, width in zip(cols, headings, widths):
+            tree.heading(col, text=heading)
+            tree.column(col, width=width, anchor=tk.W, minwidth=40)
+
+        tree.pack(fill=tk.BOTH, expand=True)
+        return tree
