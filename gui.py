@@ -186,3 +186,25 @@ class App:
         self.line_numbers.delete("1.0", tk.END)
         self.line_numbers.insert("1.0", nums)
         self.line_numbers.config(state=tk.DISABLED)
+
+    #panel 3 — token list
+
+    def _build_token_table(self, parent):
+        frame = self._titled_frame(parent, "③ List of Tokens")
+        frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=(4, 2))
+
+        cols = ("line", "type", "value")
+        self.token_tree = self._make_treeview(frame, cols,
+                                              headings=("Line", "Type", "Value"),
+                                              widths=(50, 130, 200))
+
+    #panel 4 — symbol table 
+
+    def _build_symbol_table(self, parent):
+        frame = self._titled_frame(parent, "④ Symbol Table")
+        frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=(2, 2))
+
+        cols = ("name", "type", "value")
+        self.symbol_tree = self._make_treeview(frame, cols,
+                                               headings=("Variable", "Type", "Value"),
+                                               widths=(120, 100, 160))
