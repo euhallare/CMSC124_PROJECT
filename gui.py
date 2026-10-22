@@ -294,3 +294,33 @@ class App:
 
         tree.pack(fill=tk.BOTH, expand=True)
         return tree
+
+    #helpers
+
+    def _open_file(self):
+        path = filedialog.askopenfilename(
+            title="Open LOLCode file",
+            filetypes=[("LOLCode files", "*.lol"), ("All files", "*.*")],
+        )
+        if not path:
+            return
+        self._load_file(path)
+
+    def _load_file(self, path: str):
+        try:
+            with open(path, "r") as f:
+                source = f.read()
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not open file:\n{e}")
+            return
+
+        self.current_file = path
+        filename = os.path.basename(path)
+        self.file_label.config(text=filename)
+        self.explorer_label.config(text=path, fg=FG_TEXT)
+        self.root.title(f"LOLCode Interpreter — {filename}")
+
+        self.editor.delete("1.0", tk.END)
+        self.editor.insert("1.0", source)
+        self._update_line_numbers()
+        self._log(f"Loaded: {path}\n", tag="dim")
