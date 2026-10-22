@@ -170,3 +170,19 @@ class App:
                            command=self.editor.xview)
         hb.pack(fill=tk.X, padx=6)
         self.editor.config(xscrollcommand=hb.set)
+
+    def _sync_scroll(self, *args):
+        self.editor.yview(*args)
+        self.line_numbers.yview(*args)
+
+    def _on_mousewheel(self, event):
+        self.line_numbers.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _update_line_numbers(self, event=None):
+        content = self.editor.get("1.0", tk.END)
+        n_lines = content.count("\n")
+        nums = "\n".join(str(i) for i in range(1, n_lines + 1))
+        self.line_numbers.config(state=tk.NORMAL)
+        self.line_numbers.delete("1.0", tk.END)
+        self.line_numbers.insert("1.0", nums)
+        self.line_numbers.config(state=tk.DISABLED)
