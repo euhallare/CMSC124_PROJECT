@@ -324,3 +324,45 @@ class App:
         self.editor.insert("1.0", source)
         self._update_line_numbers()
         self._log(f"Loaded: {path}\n", tag="dim")
+
+    #function to log messages to the console
+    def _run(self):
+        """Lex the current editor content and populate the token table."""
+        source = self.editor.get("1.0", tk.END)
+        if not source.strip():
+            self._log("Nothing to run — editor is empty.\n", tag="error")
+            return
+
+        #clear previous results
+        self._clear_tree(self.token_tree)
+        self._clear_tree(self.symbol_tree)
+        self._log("─" * 48 + "\n", tag="dim")
+        self._log(f"Running...\n", tag="dim")
+
+        #lex
+        lexer  = Lexer(source)
+        tokens = lexer.tokenize()
+
+        #populate token table (skip NEWLINE / EOF)
+        visible = [t for t in tokens
+                   if t.token_type not in (TT_NEWLINE, TT_EOF)]
+        for tok in visible:
+            self.token_tree.insert("", tk.END, values=(
+                tok.line_num,
+                tok.token_type,
+                tok.value,
+            ))
+
+        count = len(visible)
+
+        #report lexer errors
+        if lexer.errors:
+            for err in lexer.errors:
+                self._log(f"[LEXER ERROR] {err}\n", tag="error")
+            self._log(f"{count} tokens found with {len(lexer.errors)} error(s).\n",
+                      tag="error")
+        else:
+            self._log(f"Tokenization complete — {count} tokens found.\n", tag="ok")
+
+        #ML2/ML3: parser and interpreter calls will go here later (pag nagawa na obviously)
+        #might consider making new files.
