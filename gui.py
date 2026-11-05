@@ -9,8 +9,11 @@ Wires together the lexer (ML1), parser (ML2), and interpreter (ML3).
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
 import os
+import io
+from syntax_analyzer import Parser, print_tree
 
 from lexer import Lexer, TT_NEWLINE, TT_EOF
+from syntax_analyzer import Parser, print_tree
 
 
 #colour palette
@@ -30,6 +33,16 @@ FONT_UI    = ("Segoe UI", 10)
 FONT_HEAD  = ("Segoe UI", 10, "bold")
 FONT_TITLE = ("Segoe UI", 12, "bold")
 
+
+def tree_to_string(node):
+    #capture print_tree output as a string
+    buf = io.StringIO()
+    import sys
+    old = sys.stdout
+    sys.stdout = buf
+    print_tree(node)
+    sys.stdout = old
+    return buf.getvalue()
 
 class App:
     def __init__(self, root: tk.Tk):
@@ -62,13 +75,22 @@ class App:
         self._build_file_explorer(left)
         self._build_editor(left)
 
-        #right column: token list | symbol table | console
-        right = tk.Frame(main, bg=BG_DARK)
+        # right column: token list | symbol table | console
+        right = tk.PanedWindow(main, orient=tk.VERTICAL,
+                                bg=BG_DARK, sashwidth=5, sashrelief=tk.FLAT)
         main.add(right, minsize=400)
 
-        self._build_token_table(right)
-        self._build_symbol_table(right)
-        self._build_console(right)
+        token_frame = self._titled_frame(right, "③ List of Tokens")
+        right.add(token_frame, minsize=80)
+        self._build_token_table(token_frame)
+
+        symbol_frame = self._titled_frame(right, "④ Symbol Table")
+        right.add(symbol_frame, minsize=80)
+        self._build_symbol_table(symbol_frame)
+
+        console_frame = self._titled_frame(right, "⑤ Console")
+        right.add(console_frame, minsize=120)
+        self._build_console(console_frame)
 
     #toolbar
 
@@ -190,38 +212,29 @@ class App:
     #panel 3 — token list
 
     def _build_token_table(self, parent):
-        frame = self._titled_frame(parent, "③ List of Tokens")
-        frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=(4, 2))
-
         cols = ("line", "type", "value")
-        self.token_tree = self._make_treeview(frame, cols,
+        self.token_tree = self._make_treeview(parent, cols,
                                               headings=("Line", "Type", "Value"),
                                               widths=(50, 130, 200))
 
     #panel 4 — symbol table 
 
     def _build_symbol_table(self, parent):
-        frame = self._titled_frame(parent, "④ Symbol Table")
-        frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=(2, 2))
-
         cols = ("name", "type", "value")
-        self.symbol_tree = self._make_treeview(frame, cols,
+        self.symbol_tree = self._make_treeview(parent, cols,
                                                headings=("Variable", "Type", "Value"),
                                                widths=(120, 100, 160))
 
     #panel 5 — console
     
     def _build_console(self, parent):
-        frame = self._titled_frame(parent, "⑤ Console")
-        frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=(2, 4))
-
         self.console = scrolledtext.ScrolledText(
-            frame,
+            parent,
             bg="#0d0d1a", fg=FG_TEXT,
             font=FONT_CODE, relief=tk.FLAT,
             state=tk.DISABLED,
             padx=8, pady=4,
-            height=6,
+            #height=6, commented out to allow console to expand with window
         )
         self.console.pack(fill=tk.BOTH, expand=True, padx=6, pady=(4, 2))
         self.console.tag_config("error", foreground=FG_RED)
@@ -229,7 +242,7 @@ class App:
         self.console.tag_config("dim",   foreground=FG_DIM)
 
         #input row (for GIMMEH — ML3)
-        input_row = tk.Frame(frame, bg=BG_PANEL)
+        input_row = tk.Frame(parent, bg=BG_PANEL)
         input_row.pack(fill=tk.X, padx=6, pady=(0, 6))
 
         tk.Label(input_row, text="Input:", bg=BG_PANEL,
@@ -364,8 +377,21 @@ class App:
         else:
             self._log(f"Tokenization complete — {count} tokens found.\n", tag="ok")
 
-        #ML2/ML3: parser and interpreter calls will go here later (pag nagawa na obviously)
-        #might consider making new files.
+        if lexer.errors:
+            return
+
+        #syntax analysis (ML2)
+        parser = Parser(tokens)
+        tree   = parser.parse()
+
+        if parser.errors:
+            for err in parser.errors:
+                self._log(f"[SYNTAX ERROR] {err}\n", tag="error")
+            return
+
+        self._log("Syntax analysis complete — no syntax errors.\n", tag="ok")
+        self._log("\nParse Tree:\n", tag="dim")
+        self._log(tree_to_string(tree) + "\n", tag="dim")
 
     #console helpers
 
