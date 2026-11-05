@@ -11,6 +11,7 @@ from tkinter import ttk, filedialog, messagebox, scrolledtext
 import os
 
 from lexer import Lexer, TT_NEWLINE, TT_EOF
+from syntax_analyzer import Parser, print_tree
 
 
 #colour palette
@@ -364,7 +365,20 @@ class App:
         else:
             self._log(f"Tokenization complete — {count} tokens found.\n", tag="ok")
 
-        #ML2/ML3: parser and interpreter calls will go here later (pag nagawa na obviously)
+        if lexer.errors:
+            return
+
+        #syntax analysis (ML2)
+        parser = Parser(tokens)
+        tree   = parser.parse()
+
+        if parser.errors:
+            for err in parser.errors:
+                self._log(f"[SYNTAX ERROR] {err}\n", tag="error")
+            return
+
+        self._log("Syntax analysis complete — no syntax errors.\n", tag="ok")
+        print_tree(tree)
         #might consider making new files.
 
     #console helpers
