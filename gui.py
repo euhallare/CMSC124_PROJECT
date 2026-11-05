@@ -9,6 +9,8 @@ Wires together the lexer (ML1), parser (ML2), and interpreter (ML3).
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
 import os
+import io
+from syntax_analyzer import Parser, print_tree
 
 from lexer import Lexer, TT_NEWLINE, TT_EOF
 from syntax_analyzer import Parser, print_tree
@@ -31,6 +33,16 @@ FONT_UI    = ("Segoe UI", 10)
 FONT_HEAD  = ("Segoe UI", 10, "bold")
 FONT_TITLE = ("Segoe UI", 12, "bold")
 
+
+def tree_to_string(node):
+    #capture print_tree output as a string
+    buf = io.StringIO()
+    import sys
+    old = sys.stdout
+    sys.stdout = buf
+    print_tree(node)
+    sys.stdout = old
+    return buf.getvalue()
 
 class App:
     def __init__(self, root: tk.Tk):
@@ -378,8 +390,8 @@ class App:
             return
 
         self._log("Syntax analysis complete — no syntax errors.\n", tag="ok")
-        print_tree(tree)
-        #might consider making new files.
+        self._log("\nParse Tree:\n", tag="dim")
+        self._log(tree_to_string(tree) + "\n", tag="dim")
 
     #console helpers
 
