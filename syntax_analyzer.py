@@ -22,6 +22,7 @@ BLOCK_ENDERS = ['KTHXBYE', 'BUHBYE', 'OIC', 'NO WAI', 'MEBBE', 'YA RLY',
                 'OMG', 'OMGWTF', 'IF U SAY SO', 'IM OUTTA YR']
 
 
+#when there's an error
 class ParseError(Exception):
     def __init__(self, message, line_num):
         Exception.__init__(self, message)
@@ -29,6 +30,7 @@ class ParseError(Exception):
         self.line_num = line_num
 
 
+#tree node, the building block of the parse tree
 class Node:
     def __init__(self, label, value=None):
         self.label = label
@@ -41,6 +43,7 @@ class Node:
 
 
 class Parser:
+    #comments are stripped immediately
     def __init__(self, tokens):
         self.tokens = []
         for tok in tokens:
@@ -51,20 +54,23 @@ class Parser:
         self.in_function = False
         self.functions_ok = False
 
-    # token helpers
+    #token helpers
 
+    #look on the current token without using it up
     def peek(self, offset=0):
         index = self.pos + offset
         if index >= len(self.tokens):
             index = len(self.tokens) - 1
         return self.tokens[index]
 
+    #use current and move to the next
     def advance(self):
         tok = self.peek()
         if tok.token_type != TT_EOF:
             self.pos += 1
         return tok
 
+    #check if the token at offset is a keyword
     def is_kw(self, value, offset=0):
         tok = self.peek(offset)
         return tok.token_type == TT_KEYWORD and tok.value == value
@@ -76,18 +82,21 @@ class Parser:
             return 'end of file'
         return repr(tok.value)
 
+    #just like the is_kw but crashses with ParseError if it doesnt match
     def expect_kw(self, value):
         if not self.is_kw(value):
             tok = self.peek()
             raise ParseError('expected ' + value + ', found ' + self.describe(tok), tok.line_num)
         return self.advance()
 
+    #checks token type
     def expect_type(self, token_type, what):
         tok = self.peek()
         if tok.token_type != token_type:
             raise ParseError('expected ' + what + ', found ' + self.describe(tok), tok.line_num)
         return self.advance()
 
+    #skips over blank lines
     def skip_newlines(self):
         while self.peek().token_type == TT_NEWLINE:
             self.advance()
@@ -99,14 +108,16 @@ class Parser:
         elif tok.token_type != TT_EOF:
             raise ParseError('unexpected ' + self.describe(tok) + ', one line can only hold one statement', tok.line_num)
 
-    # program
+    #program
 
+    #catches any fatal error
     def parse(self):
         try:
             return self.parse_program()
         except ParseError as e:
             self.errors.append('Syntax Error (line ' + str(e.line_num) + '): ' + e.message)
             return None
+
 
     def parse_program(self):
         root = Node('Program')
@@ -162,7 +173,7 @@ class Parser:
         self.end_of_line()
         return decl
 
-    # blocks and statements
+    #blocks and statements
 
     def parse_block(self, terminators, allow_functions=False):
         block = Node('Block')
@@ -279,7 +290,7 @@ class Parser:
         self.end_of_line()
         return node
 
-    # flow control
+    #flow control
 
     def parse_if(self):
         node = Node('IfThen')
@@ -366,7 +377,7 @@ class Parser:
         self.end_of_line()
         return node
 
-    # functions
+    #functions
 
     def parse_function(self):
         tok = self.expect_kw('HOW IZ I')
@@ -409,9 +420,9 @@ class Parser:
         self.expect_kw('MKAY')
         return node
 
-    # expressions
-    # top is True only where SMOOSH, ALL OF and ANY OF are allowed,
-    # meaning they cannot be the operand of another operation
+    #expressions
+    #top is True only where SMOOSH, ALL OF and ANY OF are allowed,
+    #meaning they cannot be the operand of another operation
 
     def parse_expression(self, top):
         tok = self.peek()
@@ -476,7 +487,7 @@ class Parser:
         return node
 
 
-# printing
+#printing
 
 def print_tree(node, prefix='', is_last=True, is_root=True):
     text = node.label
