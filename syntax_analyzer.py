@@ -4,7 +4,7 @@ from lexer import (Lexer, TT_KEYWORD, TT_IDENTIFIER, TT_NUMBR, TT_NUMBAR,
                    TT_YARN, TT_TROOF, TT_TYPE, TT_SEPARATOR, TT_COMMENT,
                    TT_NEWLINE, TT_EOF)
 
-
+#contants
 BINARY_OPS = [
     'SUM OF', 'DIFF OF', 'PRODUKT OF', 'QUOSHUNT OF', 'MOD OF',
     'BIGGR OF', 'SMALLR OF',
@@ -121,16 +121,16 @@ class Parser:
 
     def parse_program(self):
         root = Node('Program')
-        self.skip_newlines()
+        self.skip_newlines() #skip blank lines
         while self.is_kw('HOW IZ I'):
             root.add(self.parse_function())
 
-        self.expect_kw('HAI')
-        if self.peek().token_type == TT_NUMBAR:
+        self.expect_kw('HAI') #expects HAI
+        if self.peek().token_type == TT_NUMBAR: #optional NUMBAR
             root.add(Node('Version', self.advance().value))
         self.end_of_line()
 
-        if self.is_kw('WAZZUP'):
+        if self.is_kw('WAZZUP'): 
             root.add(self.parse_declarations())
 
         root.add(self.parse_block(['KTHXBYE'], True))
