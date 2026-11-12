@@ -1,5 +1,5 @@
 """
-LOLCODE Interpreter GUI
+LOLCode Interpreter GUI
 CMSC 124 - S-3L | Group EJDB
 
 Main GUI application using tkinter.
@@ -11,14 +11,13 @@ from tkinter import ttk, filedialog, messagebox, scrolledtext
 import os
 import io
 import threading
-from syntax_analyzer import Parser, print_tree
 
 from lexer import Lexer, TT_NEWLINE, TT_EOF
-from syntax_analyzer import Parser, print_tree
+from parser import Parser, print_tree
 from interpreter import Interpreter
 
 
-# ── colour palette ────────────────────────────────────────────────────────────
+# ── Colour palette ────────────────────────────────────────────────────────────
 BG_DARK    = "#1e1e2e"
 BG_PANEL   = "#27273a"
 BG_EDITOR  = "#1a1a2a"
@@ -98,7 +97,7 @@ class App:
         right.add(console_frame, minsize=120)
         self._build_console(console_frame)
 
-    # ── toolbar ───────────────────────────────────────────────────────────
+    # ── Toolbar ───────────────────────────────────────────────────────────
 
     def _build_toolbar(self):
         bar = tk.Frame(self.root, bg=BG_PANEL, height=48)
@@ -134,7 +133,7 @@ class App:
                                    bg=BG_PANEL, fg=FG_DIM, font=FONT_UI)
         self.file_label.pack(side=tk.RIGHT, padx=12)
 
-    # ── panel 1 — file explorer ───────────────────────────────────────────
+    # ── Panel 1 — File Explorer ───────────────────────────────────────────
 
     def _build_file_explorer(self, parent):
         frame = self._titled_frame(parent, "① File Explorer")
@@ -151,7 +150,7 @@ class App:
         )
         self.explorer_label.pack(fill=tk.X)
 
-    # ── panel 2 — text editor ─────────────────────────────────────────────
+    # ── Panel 2 — Text Editor ─────────────────────────────────────────────
 
     def _build_editor(self, parent):
         frame = self._titled_frame(parent, "② Text Editor")
@@ -207,7 +206,7 @@ class App:
         self.line_numbers.insert("1.0", nums)
         self.line_numbers.config(state=tk.DISABLED)
 
-    # ── panel 3 — token list ──────────────────────────────────────────────
+    # ── Panel 3 — Token List ──────────────────────────────────────────────
 
     def _build_token_table(self, parent):
         cols = ("line", "type", "value")
@@ -215,7 +214,7 @@ class App:
                                               headings=("Line", "Type", "Value"),
                                               widths=(50, 130, 200))
 
-    # ── panel 4 — symbol table ────────────────────────────────────────────
+    # ── Panel 4 — Symbol Table ────────────────────────────────────────────
 
     def _build_symbol_table(self, parent):
         cols = ("name", "type", "value")
@@ -223,7 +222,7 @@ class App:
                                                headings=("Variable", "Type", "Value"),
                                                widths=(120, 100, 160))
 
-    # ── panel 5 — console ─────────────────────────────────────────────────
+    # ── Panel 5 — Console ─────────────────────────────────────────────────
 
     def _build_console(self, parent):
         self.console = scrolledtext.ScrolledText(
@@ -240,7 +239,7 @@ class App:
         self.console.tag_config("input",  foreground=FG_YELLOW)
         self.console.tag_config("prompt", foreground=FG_ACCENT)
 
-        # input row (GIMMEH)
+        # Input row (GIMMEH)
         input_row = tk.Frame(parent, bg=BG_PANEL)
         input_row.pack(fill=tk.X, padx=6, pady=(0, 6))
 
@@ -258,7 +257,7 @@ class App:
             bg=BG_EDITOR, fg=FG_TEXT,
             insertbackground=FG_TEXT,
             font=FONT_CODE, relief=tk.FLAT,
-            state=tk.DISABLED,           # only enabled while GIMMEH is waiting
+            state=tk.DISABLED,
         )
         self.console_input.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(4, 4))
         self.console_input.bind("<Return>", lambda e: self._send_input())
@@ -270,14 +269,13 @@ class App:
             font=FONT_UI, relief=tk.FLAT,
             padx=8, cursor="hand2",
             activebackground="#4a4a6a",
-            state=tk.DISABLED,           # only enabled while GIMMEH is waiting
+            state=tk.DISABLED,
         )
         self.send_btn.pack(side=tk.LEFT)
 
     # ── GIMMEH input handling ─────────────────────────────────────────────
 
     def _enable_input(self):
-        """Called (via root.after) when the interpreter is waiting for input."""
         self._waiting_for_input = True
         self._input_indicator.config(fg=FG_GREEN)
         self.console_input.config(state=tk.NORMAL)
@@ -285,14 +283,12 @@ class App:
         self.console_input.focus_set()
 
     def _disable_input(self):
-        """Lock the input row again after input was consumed."""
         self._waiting_for_input = False
         self._input_indicator.config(fg=FG_DIM)
         self.console_input.config(state=tk.DISABLED)
         self.send_btn.config(state=tk.DISABLED)
 
     def _send_input(self):
-        """User clicked Send (or pressed Enter) — unblock the interpreter."""
         if not self._waiting_for_input:
             return
         value = self.console_input.get()
@@ -300,39 +296,31 @@ class App:
         self._disable_input()
         self._log(f"» {value}\n", tag="input")
         self._input_value = value
-        self._input_event.set()   # wake the blocked interpreter thread
+        self._input_event.set()
 
-    # ── interpreter callbacks (called from worker thread) ─────────────────
+    # ── Interpreter callbacks (called from worker thread) ─────────────────
 
     def _interp_output(self, text, end="\n"):
-        """VISIBLE output — schedule on the main thread."""
         full = text + end
         self.root.after(0, lambda t=full: self._log(t))
 
     def _interp_input(self, prompt: str) -> str:
-        """
-        GIMMEH input — block the worker thread until the user sends text.
-        Must NOT be called from the main thread.
-        """
         self._input_event.clear()
-        # enable input row on main thread
         self.root.after(0, lambda p=prompt: (
             self._log(f"{p}", tag="prompt"),
             self._enable_input(),
         ))
-        self._input_event.wait()   # block until _send_input() sets the event
+        self._input_event.wait()
         return self._input_value
 
     def _interp_update(self, variables: dict):
-        """Symbol table refresh — schedule on the main thread."""
         self.root.after(0, lambda d=dict(variables): self._refresh_symbol_table(d))
 
-    # ── symbol table refresh ──────────────────────────────────────────────
+    # ── Symbol table refresh ──────────────────────────────────────────────
 
     def _refresh_symbol_table(self, variables: dict):
         self._clear_tree(self.symbol_tree)
         for name, lv in variables.items():
-            # format the Python value for display
             if lv.type == 'NUMBAR':
                 display_val = f"{lv.value:.2f}" if isinstance(lv.value, float) else str(lv.value)
             elif lv.type == 'TROOF':
@@ -343,7 +331,7 @@ class App:
                 display_val = str(lv.value)
             self.symbol_tree.insert("", tk.END, values=(name, lv.type, display_val))
 
-    # ── run pipeline ──────────────────────────────────────────────────────
+    # ── Run pipeline ──────────────────────────────────────────────────────
 
     def _run(self):
         source = self.editor.get("1.0", tk.END)
@@ -351,13 +339,12 @@ class App:
             self._log("Nothing to run — editor is empty.\n", tag="error")
             return
 
-        # clear previous results
         self._clear_tree(self.token_tree)
         self._clear_tree(self.symbol_tree)
         self._log("─" * 48 + "\n", tag="dim")
         self._log("Running...\n", tag="dim")
 
-        # ── 1. lex ────────────────────────────────────────────────────────
+        # 1. Lex
         lexer  = Lexer(source)
         tokens = lexer.tokenize()
 
@@ -373,7 +360,7 @@ class App:
 
         self._log(f"Tokenization complete — {len(visible)} tokens found.\n", tag="ok")
 
-        # ── 2. parse ──────────────────────────────────────────────────────
+        # 2. Parse
         parser = Parser(tokens)
         tree   = parser.parse()
 
@@ -386,7 +373,7 @@ class App:
         self._log("\nParse Tree:\n", tag="dim")
         self._log(tree_to_string(tree) + "\n", tag="dim")
 
-        # ── 3. interpret (in background thread) ──────────────────────────
+        # 3. Interpret (in background thread)
         self.run_btn.config(state=tk.DISABLED)
         self._log("─" * 48 + "\n", tag="dim")
         self._log("Executing...\n", tag="dim")
@@ -399,14 +386,12 @@ class App:
 
         def worker():
             interp.run(tree)
-            # back on main thread: report errors + re-enable run button
             self.root.after(0, lambda: self._run_finished(interp))
 
         t = threading.Thread(target=worker, daemon=True)
         t.start()
 
     def _run_finished(self, interp: Interpreter):
-        """Called on the main thread after the interpreter thread exits."""
         if interp.errors:
             for err in interp.errors:
                 self._log(f"[RUNTIME ERROR] {err}\n", tag="error")
@@ -415,7 +400,7 @@ class App:
         self.run_btn.config(state=tk.NORMAL)
         self._disable_input()
 
-    # ── helpers ───────────────────────────────────────────────────────────
+    # ── Helpers ───────────────────────────────────────────────────────────
 
     def _titled_frame(self, parent, title: str) -> tk.LabelFrame:
         return tk.LabelFrame(
@@ -498,7 +483,7 @@ class App:
             tree.delete(item)
 
 
-# ── entry point ───────────────────────────────────────────────────────────────
+# ── Entry point ───────────────────────────────────────────────────────────────
 
 def main():
     root = tk.Tk()
