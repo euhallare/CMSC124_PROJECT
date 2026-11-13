@@ -1,0 +1,11 @@
+HOW IZ I add YR a AN YR b
+  FOUND YR SUM OF a AN b
+IF U SAY SO
+
+HAI
+WAZZUP
+  I HAS A result ITZ 0
+BUHBYE
+result R I IZ add YR 5 AN YR 3 MKAY
+VISIBLE result
+KTHXBYE
