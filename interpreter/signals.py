@@ -1,10 +1,5 @@
-"""
-LOLCODE Interpreter — Control flow signals and runtime error
-CMSC 124 - S-3L | Group EJDB
-"""
-
+#LOLCODE Interpreter — Control flow signals and runtime error
 from .values import LolValue
-
 
 class RuntimeError_(Exception):
     """A LOLCODE runtime error."""
@@ -15,11 +10,11 @@ class RuntimeError_(Exception):
 
 
 class GtfoSignal(Exception):
-    """Raised by GTFO to break out of a loop or switch."""
+    #Raised by GTFO to break out of a loop or switch.
     pass
 
 
 class FoundYrSignal(Exception):
-    """Raised by FOUND YR to return a value from a function."""
+    #Raised by FOUND YR to return a value from a function.
     def __init__(self, value: LolValue):
         self.value = value
