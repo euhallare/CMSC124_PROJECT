@@ -129,6 +129,17 @@ class App:
         )
         open_btn.pack(side=tk.RIGHT, padx=4, pady=8)
 
+        save_btn = tk.Button(
+          bar, text="💾  Save",
+          command=self._save_file,
+          bg=BG_HEADER, fg=FG_TEXT,
+          font=FONT_UI,
+          relief=tk.FLAT, padx=12, pady=4,
+          cursor="hand2",
+          activebackground="#4a4a6a", activeforeground=FG_TEXT,
+        )
+        save_btn.pack(side=tk.RIGHT, padx=4, pady=8)
+
         self.file_label = tk.Label(bar, text="No file selected",
                                    bg=BG_PANEL, fg=FG_DIM, font=FONT_UI)
         self.file_label.pack(side=tk.RIGHT, padx=12)
@@ -468,6 +479,32 @@ class App:
         self.editor.insert("1.0", source)
         self._update_line_numbers()
         self._log(f"Loaded: {path}\n", tag="dim")
+
+    def _save_file(self):
+      path = self.current_file
+      if not path:
+          path = filedialog.asksaveasfilename(
+              title="Save LOLCode file",
+              defaultextension=".lol",
+              filetypes=[("LOLCode files", "*.lol"), ("All files", "*.*")],
+          )
+          if not path:
+              return
+
+      try:
+          content = self.editor.get("1.0", "end-1c")
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(content)
+      except Exception as e:
+          messagebox.showerror("Error", f"Could not save file:\n{e}")
+          return
+
+      self.current_file = path
+      filename = os.path.basename(path)
+      self.file_label.config(text=filename)
+      self.explorer_label.config(text=path, fg=FG_TEXT)
+      self.root.title(f"LOLCode Interpreter — {filename}")
+      self._log(f"Saved: {path}\n", tag="dim")
 
     def _log(self, text: str, tag: str = ""):
         self.console.config(state=tk.NORMAL)
