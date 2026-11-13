@@ -1,9 +1,6 @@
-"""
-LOLCODE Interpreter — Runtime value types
-CMSC 124 - S-3L | Group EJDB
-"""
+#LOLCODE Interpreter — Runtime value types
 
-# ── Type constants ────────────────────────────────────────────────────────────
+#Type constants
 
 TYPE_NOOB   = 'NOOB'
 TYPE_NUMBR  = 'NUMBR'
@@ -14,10 +11,10 @@ TYPE_TROOF  = 'TROOF'
 VALID_TYPES = {TYPE_NOOB, TYPE_NUMBR, TYPE_NUMBAR, TYPE_YARN, TYPE_TROOF}
 
 
-# ── LolValue ──────────────────────────────────────────────────────────────────
+#LolValue
 
 class LolValue:
-    """A LOLCODE runtime value: (python_value, lolcode_type)."""
+    #A LOLCODE runtime value: (python_value, lolcode_type).
     __slots__ = ('value', 'type')
 
     def __init__(self, value, lc_type):
@@ -28,5 +25,5 @@ class LolValue:
         return f'LolValue({self.value!r}, {self.type})'
 
 
-# Singleton for uninitialized variables
+#Singleton for uninitialized variables
 NOOB_VALUE = LolValue(None, TYPE_NOOB)
