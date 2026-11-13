@@ -1,7 +1,4 @@
-"""
-LOLCODE Interpreter — Typecasting logic
-CMSC 124 - S-3L | Group EJDB
-"""
+#LOLCODE Interpreter — Typecasting logic
 
 from .values import (
     LolValue, NOOB_VALUE,
@@ -11,8 +8,8 @@ from .signals import RuntimeError_
 
 
 def _is_numeric_yarn(s: str) -> bool:
-    """True if the YARN can be cast to a number (digits, optional leading
-    hyphen, optional period)."""
+    #True if the YARN can be cast to a number (digits, optional leading
+    #hyphen, optional period)."""
     s = s.strip()
     if not s:
         return False
@@ -33,10 +30,10 @@ def typecast(val: LolValue, to_type: str, explicit: bool = False) -> LolValue:
     if val.type == to_type:
         return val
 
-    # ── NOOB ──────────────────────────────────────────────────────────────
+    #NOOB
     if val.type == TYPE_NOOB:
         if to_type == TYPE_TROOF:
-            return LolValue(False, TYPE_TROOF)   # NOOB → TROOF is always FAIL
+            return LolValue(False, TYPE_TROOF)   #NOOB → TROOF is always FAIL
         if explicit:
             if to_type == TYPE_NUMBR:
                 return LolValue(0, TYPE_NUMBR)
@@ -48,9 +45,9 @@ def typecast(val: LolValue, to_type: str, explicit: bool = False) -> LolValue:
                 return NOOB_VALUE
         raise RuntimeError_(f'Cannot implicitly cast NOOB to {to_type}')
 
-    # ── TROOF ─────────────────────────────────────────────────────────────
+    #TROOF
     if val.type == TYPE_TROOF:
-        win = val.value  # True / False
+        win = val.value  #True / False
         if to_type == TYPE_NUMBR:
             return LolValue(1 if win else 0, TYPE_NUMBR)
         if to_type == TYPE_NUMBAR:
@@ -60,7 +57,7 @@ def typecast(val: LolValue, to_type: str, explicit: bool = False) -> LolValue:
         if to_type == TYPE_NOOB:
             return NOOB_VALUE
 
-    # ── NUMBR ─────────────────────────────────────────────────────────────
+    #NUMBR
     if val.type == TYPE_NUMBR:
         n = val.value
         if to_type == TYPE_NUMBAR:
@@ -72,11 +69,11 @@ def typecast(val: LolValue, to_type: str, explicit: bool = False) -> LolValue:
         if to_type == TYPE_NOOB:
             return NOOB_VALUE
 
-    # ── NUMBAR ────────────────────────────────────────────────────────────
+    #NUMBAR
     if val.type == TYPE_NUMBAR:
         f = val.value
         if to_type == TYPE_NUMBR:
-            return LolValue(int(f), TYPE_NUMBR)   # truncate
+            return LolValue(int(f), TYPE_NUMBR)   #truncate
         if to_type == TYPE_YARN:
             return LolValue(f'{f:.2f}', TYPE_YARN)
         if to_type == TYPE_TROOF:
@@ -84,7 +81,7 @@ def typecast(val: LolValue, to_type: str, explicit: bool = False) -> LolValue:
         if to_type == TYPE_NOOB:
             return NOOB_VALUE
 
-    # ── YARN ──────────────────────────────────────────────────────────────
+    #YARN
     if val.type == TYPE_YARN:
         s = val.value
         if to_type == TYPE_NUMBR:
@@ -104,7 +101,7 @@ def typecast(val: LolValue, to_type: str, explicit: bool = False) -> LolValue:
 
 
 def to_yarn(val: LolValue) -> str:
-    """Convert any LolValue to its YARN string representation."""
+    #Convert any LolValue to its YARN string representation.
     v = typecast(val, TYPE_YARN, explicit=True)
     return v.value
 
