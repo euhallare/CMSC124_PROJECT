@@ -1,14 +1,9 @@
-"""
-LOLCODE Interpreter — Environment (variable store)
-CMSC 124 - S-3L | Group EJDB
-"""
-
+#LOLCODE Interpreter — Environment (variable store)
 from .values import LolValue, NOOB_VALUE
 from .signals import RuntimeError_
 
-
 class Environment:
-    """Holds variables for one scope. Chains to a parent for outer scopes."""
+    #holds variables for one scope. Chains to a parent for outer scopes.
 
     def __init__(self, parent=None):
         self.vars   = {}
@@ -23,7 +18,7 @@ class Environment:
         raise RuntimeError_(f'Variable "{name}" is not defined')
 
     def set(self, name: str, val: LolValue):
-        """Set in the nearest scope that already has the name, else local."""
+        #set in the nearest scope that already has the name, else local.
         if name in self.vars:
             self.vars[name] = val
             return
@@ -33,7 +28,7 @@ class Environment:
         self.vars[name] = val
 
     def set_local(self, name: str, val: LolValue):
-        """Always set in this scope (used for function parameters)."""
+        #always set in this scope (used for function parameters).
         self.vars[name] = val
 
     def has(self, name: str) -> bool:
@@ -50,7 +45,7 @@ class Environment:
         return self.vars.get('IT', NOOB_VALUE)
 
     def all_vars(self) -> dict:
-        """Return a flat dict of all visible variables for the symbol table."""
+        #return a flat dict of all visible variables for the symbol table.
         result = {}
         if self.parent:
             result.update(self.parent.all_vars())
