@@ -1,8 +1,6 @@
-"""
-LOLCODE Interpreter — Interpreter class (AST executor)
-CMSC 124 - S-3L | Group EJDB
-Milestone 3 - Semantic Analysis
-"""
+#LOLCODE Interpreter — Interpreter class (AST executor)
+#Milestone 3 - Semantic Analysis
+
 
 import sys
 
@@ -31,8 +29,7 @@ class Interpreter:
         self.env       = None
         self.errors    = []
 
-    # ── Public entry point ────────────────────────────────────────────────
-
+    #Public entry point
     def run(self, tree: Node):
         """Execute the program tree. Returns the final environment."""
         self.env    = Environment()
@@ -49,10 +46,10 @@ class Interpreter:
             self.errors.append(f'Unexpected error: {e}')
         return self.env
 
-    # ── Program structure ─────────────────────────────────────────────────
+    #Program structure
 
     def _exec_program(self, node: Node):
-        # Collect all function definitions first
+        #collect all function definitions first
         for child in node.children:
             if child.label == 'Function':
                 self.functions[child.value] = child
@@ -62,7 +59,7 @@ class Interpreter:
                 self._exec_declarations(child)
             elif child.label == 'Block':
                 self._exec_block(child, self.env)
-            # Version and Function nodes are skipped here
+            #version and Function nodes are skipped here
 
     def _exec_declarations(self, node: Node):
         for decl in node.children:
@@ -78,8 +75,7 @@ class Interpreter:
         env.set_local(name, val)
         self._notify_update(env)
 
-    # ── Block / statement dispatch ────────────────────────────────────────
-
+    #block / statement dispatch 
     def _exec_block(self, node: Node, env: Environment):
         for stmt in node.children:
             self._exec_stmt(stmt, env)
@@ -115,8 +111,7 @@ class Interpreter:
         else:
             raise RuntimeError_(f'Unknown statement type: {label}')
 
-    # ── Print ─────────────────────────────────────────────────────────────
-
+    #Print 
     def _exec_print(self, node: Node, env: Environment):
         parts      = []
         no_newline = False
@@ -132,7 +127,7 @@ class Interpreter:
         else:
             self.output_fn(text)
 
-    # ── Input ─────────────────────────────────────────────────────────────
+    #Input
 
     def _exec_input(self, node: Node, env: Environment):
         var_name = node.children[0].value
@@ -141,7 +136,7 @@ class Interpreter:
         env.set(var_name, val)
         self._notify_update(env)
 
-    # ── Assignment ────────────────────────────────────────────────────────
+    #Assignment
 
     def _exec_assignment(self, node: Node, env: Environment):
         var_name = node.children[0].value
@@ -152,7 +147,7 @@ class Interpreter:
         env.set_it(val)
         self._notify_update(env)
 
-    # ── Recast (IS NOW A) ─────────────────────────────────────────────────
+    #Recast (IS NOW A)
 
     def _exec_recast(self, node: Node, env: Environment):
         var_name = node.children[0].value
@@ -162,7 +157,7 @@ class Interpreter:
         env.set(var_name, new_val)
         self._notify_update(env)
 
-    # ── If-then ───────────────────────────────────────────────────────────
+    #If-then
 
     def _exec_if(self, node: Node, env: Environment):
         condition = to_troof(env.get_it())
@@ -193,7 +188,7 @@ class Interpreter:
             if not executed and no_wai:
                 self._exec_block(no_wai.children[0], env)
 
-    # ── Switch ────────────────────────────────────────────────────────────
+    #Switch
 
     def _exec_switch(self, node: Node, env: Environment):
         it_val  = env.get_it()
@@ -217,12 +212,12 @@ class Interpreter:
             pass
 
     def _values_equal(self, a: LolValue, b: LolValue) -> bool:
-        """Equality check for switch-case (no auto typecast per spec)."""
+        #equality check for switch-case (no auto typecast per spec).
         if a.type != b.type:
             return False
         return a.value == b.value
 
-    # ── Loop ──────────────────────────────────────────────────────────────
+    #loop
 
     def _exec_loop(self, node: Node, env: Environment):
         op_node   = None
@@ -257,7 +252,7 @@ class Interpreter:
                     cur_num = typecast(cur, TYPE_NUMBR)
                     if op_node.value == 'UPPIN':
                         new_val = LolValue(cur_num.value + 1, TYPE_NUMBR)
-                    else:  # NERFIN
+                    else:  #NERFIN
                         new_val = LolValue(cur_num.value - 1, TYPE_NUMBR)
                     env.set(var_node.value, new_val)
                     self._notify_update(env)
@@ -265,7 +260,7 @@ class Interpreter:
         except GtfoSignal:
             pass
 
-    # ── Expression evaluator ──────────────────────────────────────────────
+    #Expression evaluator
 
     def _eval_expr(self, node: Node, env: Environment) -> LolValue:
         label = node.label
@@ -287,8 +282,7 @@ class Interpreter:
 
         raise RuntimeError_(f'Unknown expression node: {label}')
 
-    # ── Literal ───────────────────────────────────────────────────────────
-
+    #Literal
     def _eval_literal(self, node: Node) -> LolValue:
         label = node.label
         raw   = node.value
@@ -303,7 +297,7 @@ class Interpreter:
             return LolValue(raw == 'WIN', 'TROOF')
         raise RuntimeError_(f'Unknown literal type in node: {label}')
 
-    # ── Binary op ─────────────────────────────────────────────────────────
+    #Binary op
 
     def _eval_binary(self, node: Node, env: Environment) -> LolValue:
         op    = node.value
@@ -355,7 +349,7 @@ class Interpreter:
         raise RuntimeError_(f'Unknown arithmetic op: {op}')
 
     def _compare_equal(self, a: LolValue, b: LolValue) -> bool:
-        """Equality per spec — no automatic typecasting for comparison."""
+        #Equality per spec — no automatic typecasting for comparison
         if a.type == 'NUMBR'  and b.type == 'NUMBR':
             return a.value == b.value
         if a.type == 'NUMBAR' and b.type == 'NUMBAR':
@@ -369,7 +363,7 @@ class Interpreter:
             return float(a.value) == float(b.value)
         return False
 
-    # ── Unary op ──────────────────────────────────────────────────────────
+    #Unary op
 
     def _eval_unary(self, node: Node, env: Environment) -> LolValue:
         op  = node.value
@@ -378,8 +372,7 @@ class Interpreter:
             return LolValue(not to_troof(val), 'TROOF')
         raise RuntimeError_(f'Unknown unary op: {op}')
 
-    # ── Variadic op ───────────────────────────────────────────────────────
-
+    #Variadic op
     def _eval_variadic(self, node: Node, env: Environment) -> LolValue:
         op = node.value
 
@@ -396,7 +389,7 @@ class Interpreter:
 
         raise RuntimeError_(f'Unknown variadic op: {op}')
 
-    # ── Typecast (MAEK) ───────────────────────────────────────────────────
+    #Typecast (MAEK)
 
     def _eval_typecast(self, node: Node, env: Environment) -> LolValue:
         val     = self._eval_expr(node.children[0], env)
@@ -405,8 +398,7 @@ class Interpreter:
         env.set_it(result)
         return result
 
-    # ── Function call ─────────────────────────────────────────────────────
-
+    #Function call
     def _eval_call(self, node: Node, env: Environment) -> LolValue:
         name = node.value
         if name not in self.functions:
@@ -416,7 +408,7 @@ class Interpreter:
         params      = func_node.children[0]   # Parameters node
         body        = func_node.children[1]   # Block node
 
-        # Evaluate arguments in caller's environment
+        #evaluate arguments in caller's environment
         arg_vals    = [self._eval_expr(c, env) for c in node.children]
         param_names = [p.value for p in params.children]
 
@@ -426,7 +418,7 @@ class Interpreter:
                 f'got {len(arg_vals)}'
             )
 
-        # Fresh environment — no access to outer vars (pass-by-value)
+        #fresh environment — no access to outer vars (pass-by-value)
         func_env = Environment()
         for pname, pval in zip(param_names, arg_vals):
             func_env.set_local(pname, pval)
@@ -442,14 +434,13 @@ class Interpreter:
         env.set_it(result)
         return result
 
-    # ── Notify symbol table ───────────────────────────────────────────────
-
+    #Notify symbol table
     def _notify_update(self, env: Environment):
-        """Push current variable state to the UI callback."""
+        #Push current variable state to the UI callback.
         self.update_fn(env.all_vars())
 
 
-# ── CLI entry point ───────────────────────────────────────────────────────────
+#CLI entry point
 
 def main():
     from lexer import Lexer
