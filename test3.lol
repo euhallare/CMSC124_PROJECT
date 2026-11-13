@@ -1,0 +1,12 @@
+HAI
+WAZZUP
+  I HAS A x ITZ 10
+BUHBYE
+BOTH SAEM x AN 10
+O RLY?
+  YA RLY
+    VISIBLE "x is 10"
+  NO WAI
+    VISIBLE "x is not 10"
+OIC
+KTHXBYE
