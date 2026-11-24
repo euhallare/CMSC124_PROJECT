@@ -40,7 +40,7 @@ def typecast(val: LolValue, to_type: str, explicit: bool = False) -> LolValue:
             if to_type == TYPE_NUMBAR:
                 return LolValue(0.0, TYPE_NUMBAR)
             if to_type == TYPE_YARN:
-                return LolValue('', TYPE_YARN)
+                return LolValue('NOOB', TYPE_YARN)
             if to_type == TYPE_NOOB:
                 return NOOB_VALUE
         raise RuntimeError_(f'Cannot implicitly cast NOOB to {to_type}')
