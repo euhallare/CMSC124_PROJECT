@@ -9,11 +9,10 @@ Wires together the lexer (ML1), parser (ML2), and interpreter (ML3).
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
 import os
-import io
 import threading
 
 from lexer import Lexer, TT_NEWLINE, TT_EOF
-from parser import Parser, print_tree
+from parser import Parser
 from interpreter import Interpreter
 
 
@@ -35,31 +34,17 @@ FONT_HEAD  = ("Segoe UI", 10, "bold")
 FONT_TITLE = ("Segoe UI", 12, "bold")
 
 
-def tree_to_string(node):
-    """Capture print_tree output as a string."""
-    buf = io.StringIO()
-    import sys
-    old = sys.stdout
-    sys.stdout = buf
-    print_tree(node)
-    sys.stdout = old
-    return buf.getvalue()
-
-
 class App:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("LOLCode Interpreter — CMSC 124 Group EJDB")
         self.root.configure(bg=BG_DARK)
         self.root.geometry("1280x800")
-        self.root.minsize(900, 600)
+        self.root.minsize(960, 620)
 
         self.current_file: str | None = None
 
         # ── GIMMEH input synchronisation ──────────────────────────────────
-        # The interpreter runs in a worker thread.  When it needs input it
-        # sets _waiting_for_input = True, blocks on _input_event, and reads
-        # _input_value once the main thread releases the event.
         self._waiting_for_input: bool = False
         self._input_event: threading.Event = threading.Event()
         self._input_value: str = ""
@@ -69,54 +54,101 @@ class App:
     # ── UI construction ───────────────────────────────────────────────────
 
     def _build_ui(self):
+        # 1. Top Toolbar
         self._build_toolbar()
 
-        main = tk.PanedWindow(self.root, orient=tk.HORIZONTAL,
-                              bg=BG_DARK, sashwidth=5, sashrelief=tk.FLAT)
-        main.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
+        # 2. Fixed Bottom Input Row (packed BEFORE main panes so it is always anchored)
+        self._build_input_bar()
 
-        left = tk.Frame(main, bg=BG_DARK)
-        main.add(left, minsize=350)
+        # 3. Main Vertical Split: Top Workspace vs. Bottom Full-Width Console
+        outer_v = tk.PanedWindow(
+            self.root, orient=tk.VERTICAL,
+            bg=BG_DARK, sashwidth=5, sashrelief=tk.FLAT
+        )
+        outer_v.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 4))
 
-        self._build_file_explorer(left)
-        self._build_editor(left)
+        # Top Horizontal Split: Left (File + Editor) vs. Right (Tokens + Symbol Table)
+        top_h = tk.PanedWindow(
+            outer_v, orient=tk.HORIZONTAL,
+            bg=BG_DARK, sashwidth=5, sashrelief=tk.FLAT
+        )
+        outer_v.add(top_h, minsize=280, stretch="always")
 
-        right = tk.PanedWindow(main, orient=tk.VERTICAL,
-                               bg=BG_DARK, sashwidth=5, sashrelief=tk.FLAT)
-        main.add(right, minsize=400)
+        # ── Left Column: Compact File Explorer + Text Editor ──────────────
+        left_col = tk.Frame(top_h, bg=BG_DARK)
+        top_h.add(left_col, minsize=340, stretch="always")
 
-        token_frame = self._titled_frame(right, "③ List of Tokens")
-        right.add(token_frame, minsize=80)
+        self._build_file_explorer(left_col)
+        self._build_editor(left_col)
+
+        # ── Top-Right Column: Lexemes/Tokens & Symbol Table Side-by-Side ───
+        right_h = tk.PanedWindow(
+            top_h, orient=tk.HORIZONTAL,
+            bg=BG_DARK, sashwidth=5, sashrelief=tk.FLAT
+        )
+        top_h.add(right_h, minsize=460, stretch="always")
+
+        token_frame = self._titled_frame(right_h, "Lexemes / Tokens")
+        right_h.add(token_frame, minsize=230, stretch="always")
         self._build_token_table(token_frame)
 
-        symbol_frame = self._titled_frame(right, "④ Symbol Table")
-        right.add(symbol_frame, minsize=80)
+        symbol_frame = self._titled_frame(right_h, "Symbol Table")
+        right_h.add(symbol_frame, minsize=210, stretch="always")
         self._build_symbol_table(symbol_frame)
 
-        console_frame = self._titled_frame(right, "⑤ Console")
-        right.add(console_frame, minsize=120)
+        # ── Bottom Pane: Execute Bar + Full-Width Console ─────────────────
+        bottom_area = tk.Frame(outer_v, bg=BG_DARK)
+        outer_v.add(bottom_area, minsize=180, stretch="always")
+
+        self.run_btn = tk.Button(
+            bottom_area,
+            text="▶  EXECUTE",
+            command=self._run,
+            bg=FG_GREEN, fg=BG_DARK,
+            font=FONT_HEAD,
+            relief=tk.FLAT, pady=5,
+            cursor="hand2",
+            activebackground="#7dc97a", activeforeground=BG_DARK,
+        )
+        self.run_btn.pack(fill=tk.X, pady=(2, 4))
+
+        console_frame = self._titled_frame(bottom_area, "Console")
+        console_frame.pack(fill=tk.BOTH, expand=True)
         self._build_console(console_frame)
 
     # ── Toolbar ───────────────────────────────────────────────────────────
 
     def _build_toolbar(self):
-        bar = tk.Frame(self.root, bg=BG_PANEL, height=48)
+        bar = tk.Frame(self.root, bg=BG_PANEL, height=46)
         bar.pack(fill=tk.X, padx=8, pady=(8, 4))
         bar.pack_propagate(False)
 
-        tk.Label(bar, text="LOLCode Interpreter",
-                 bg=BG_PANEL, fg=FG_ACCENT, font=FONT_TITLE).pack(side=tk.LEFT, padx=12)
+        tk.Label(
+            bar, text="LOLCode Interpreter",
+            bg=BG_PANEL, fg=FG_ACCENT, font=FONT_TITLE
+        ).pack(side=tk.LEFT, padx=12)
 
-        self.run_btn = tk.Button(
-            bar, text="▶  Execute / Run",
-            command=self._run,
-            bg=FG_GREEN, fg=BG_DARK,
-            font=FONT_HEAD,
-            relief=tk.FLAT, padx=16, pady=4,
+        clear_btn = tk.Button(
+            bar, text="🧹  Clear",
+            command=self._clear_all,
+            bg=BG_HEADER, fg=FG_YELLOW,
+            font=FONT_UI,
+            relief=tk.FLAT, padx=12, pady=4,
             cursor="hand2",
-            activebackground="#7dc97a", activeforeground=BG_DARK,
+            activebackground="#4a4a6a", activeforeground=FG_YELLOW,
         )
-        self.run_btn.pack(side=tk.RIGHT, padx=12, pady=8)
+        clear_btn.pack(side=tk.RIGHT, padx=(4, 12), pady=8)
+
+        save_btn = tk.Button(
+            bar, text="💾  Save",
+            command=self._save_file,
+            bg=BG_HEADER, fg=FG_TEXT,
+            font=FONT_UI,
+            relief=tk.FLAT, padx=12, pady=4,
+            cursor="hand2",
+            activebackground="#4a4a6a", activeforeground=FG_TEXT,
+        )
+        save_btn.pack(side=tk.RIGHT, padx=4, pady=8)
 
         open_btn = tk.Button(
             bar, text="📂  Open File",
@@ -129,46 +161,41 @@ class App:
         )
         open_btn.pack(side=tk.RIGHT, padx=4, pady=8)
 
-        save_btn = tk.Button(
-          bar, text="💾  Save",
-          command=self._save_file,
-          bg=BG_HEADER, fg=FG_TEXT,
-          font=FONT_UI,
-          relief=tk.FLAT, padx=12, pady=4,
-          cursor="hand2",
-          activebackground="#4a4a6a", activeforeground=FG_TEXT,
-        )
-        save_btn.pack(side=tk.RIGHT, padx=4, pady=8)
-
-        self.file_label = tk.Label(bar, text="No file selected",
-                                   bg=BG_PANEL, fg=FG_DIM, font=FONT_UI)
-        self.file_label.pack(side=tk.RIGHT, padx=12)
-
-    # ── Panel 1 — File Explorer ───────────────────────────────────────────
+    # ── Panel 1 — File Explorer Bar ───────────────────────────────────────
 
     def _build_file_explorer(self, parent):
-        frame = self._titled_frame(parent, "① File Explorer")
-        frame.pack(fill=tk.X, padx=4, pady=(4, 2))
-
-        inner = tk.Frame(frame, bg=BG_PANEL)
-        inner.pack(fill=tk.X, padx=6, pady=6)
+        bar = tk.Frame(
+            parent, bg=BG_PANEL,
+            highlightbackground=BG_HEADER, highlightthickness=1
+        )
+        bar.pack(fill=tk.X, pady=(0, 4))
 
         self.explorer_label = tk.Label(
-            inner,
-            text="No file loaded — click Open File or drag a .lol file",
+            bar,
+            text="(None)",
             bg=BG_PANEL, fg=FG_DIM, font=FONT_UI,
-            anchor="w", wraplength=340,
+            anchor="w", padx=10, pady=5,
         )
-        self.explorer_label.pack(fill=tk.X)
+        self.explorer_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        folder_btn = tk.Button(
+            bar, text="📂",
+            command=self._open_file,
+            bg=BG_HEADER, fg=FG_ACCENT,
+            font=FONT_UI, relief=tk.FLAT,
+            padx=10, pady=3, cursor="hand2",
+            activebackground="#4a4a6a", activeforeground=FG_TEXT,
+        )
+        folder_btn.pack(side=tk.RIGHT)
 
     # ── Panel 2 — Text Editor ─────────────────────────────────────────────
 
     def _build_editor(self, parent):
-        frame = self._titled_frame(parent, "② Text Editor")
-        frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=(2, 4))
+        frame = self._titled_frame(parent, "Text Editor")
+        frame.pack(fill=tk.BOTH, expand=True)
 
         inner = tk.Frame(frame, bg=BG_EDITOR)
-        inner.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
+        inner.pack(fill=tk.BOTH, expand=True, padx=6, pady=(6, 2))
 
         self.line_numbers = tk.Text(
             inner, width=4,
@@ -198,8 +225,10 @@ class App:
         self.editor.bind("<MouseWheel>", self._on_mousewheel)
 
         hb = tk.Scrollbar(frame, orient=tk.HORIZONTAL, command=self.editor.xview)
-        hb.pack(fill=tk.X, padx=6)
+        hb.pack(fill=tk.X, padx=6, pady=(0, 6))
         self.editor.config(xscrollcommand=hb.set)
+
+        self._update_line_numbers()
 
     def _sync_scroll(self, *args):
         self.editor.yview(*args)
@@ -210,7 +239,7 @@ class App:
 
     def _update_line_numbers(self, event=None):
         content = self.editor.get("1.0", tk.END)
-        n_lines = content.count("\n")
+        n_lines = max(1, content.count("\n"))
         nums = "\n".join(str(i) for i in range(1, n_lines + 1))
         self.line_numbers.config(state=tk.NORMAL)
         self.line_numbers.delete("1.0", tk.END)
@@ -221,17 +250,21 @@ class App:
 
     def _build_token_table(self, parent):
         cols = ("line", "type", "value")
-        self.token_tree = self._make_treeview(parent, cols,
-                                              headings=("Line", "Type", "Value"),
-                                              widths=(50, 130, 200))
+        self.token_tree = self._make_treeview(
+            parent, cols,
+            headings=("Line", "Classification", "Lexeme"),
+            widths=(45, 130, 120),
+        )
 
     # ── Panel 4 — Symbol Table ────────────────────────────────────────────
 
     def _build_symbol_table(self, parent):
         cols = ("name", "type", "value")
-        self.symbol_tree = self._make_treeview(parent, cols,
-                                               headings=("Variable", "Type", "Value"),
-                                               widths=(120, 100, 160))
+        self.symbol_tree = self._make_treeview(
+            parent, cols,
+            headings=("Identifier", "Type", "Value"),
+            widths=(100, 80, 120),
+        )
 
     # ── Panel 5 — Console ─────────────────────────────────────────────────
 
@@ -241,48 +274,57 @@ class App:
             bg="#0d0d1a", fg=FG_TEXT,
             font=FONT_CODE, relief=tk.FLAT,
             state=tk.DISABLED,
-            padx=8, pady=4,
+            padx=8, pady=6,
         )
-        self.console.pack(fill=tk.BOTH, expand=True, padx=6, pady=(4, 2))
+        self.console.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
         self.console.tag_config("error",  foreground=FG_RED)
         self.console.tag_config("ok",     foreground=FG_GREEN)
         self.console.tag_config("dim",    foreground=FG_DIM)
         self.console.tag_config("input",  foreground=FG_YELLOW)
         self.console.tag_config("prompt", foreground=FG_ACCENT)
 
-        # Input row (GIMMEH)
-        input_row = tk.Frame(parent, bg=BG_PANEL)
-        input_row.pack(fill=tk.X, padx=6, pady=(0, 6))
+    # ── Fixed Bottom Input Row (GIMMEH) ───────────────────────────────────
+
+    def _build_input_bar(self):
+        input_bar = tk.Frame(
+            self.root, bg=BG_PANEL, height=40,
+            highlightbackground=BG_HEADER, highlightthickness=1
+        )
+        input_bar.pack(side=tk.BOTTOM, fill=tk.X, padx=8, pady=(0, 8))
+        input_bar.pack_propagate(False)
 
         self._input_indicator = tk.Label(
-            input_row, text="●",
+            input_bar, text="●",
             bg=BG_PANEL, fg=FG_DIM, font=FONT_UI,
         )
-        self._input_indicator.pack(side=tk.LEFT, padx=(0, 2))
+        self._input_indicator.pack(side=tk.LEFT, padx=(10, 4))
 
-        tk.Label(input_row, text="Input:", bg=BG_PANEL,
-                 fg=FG_DIM, font=FONT_UI).pack(side=tk.LEFT)
+        tk.Label(
+            input_bar, text="GIMMEH Input:",
+            bg=BG_PANEL, fg=FG_DIM, font=FONT_HEAD
+        ).pack(side=tk.LEFT, padx=(0, 6))
 
         self.console_input = tk.Entry(
-            input_row,
+            input_bar,
             bg=BG_EDITOR, fg=FG_TEXT,
             insertbackground=FG_TEXT,
+            disabledbackground="#161624",
             font=FONT_CODE, relief=tk.FLAT,
             state=tk.DISABLED,
         )
-        self.console_input.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(4, 4))
+        self.console_input.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=4, pady=6)
         self.console_input.bind("<Return>", lambda e: self._send_input())
 
         self.send_btn = tk.Button(
-            input_row, text="Send",
+            input_bar, text="Send",
             command=self._send_input,
             bg=BG_HEADER, fg=FG_TEXT,
-            font=FONT_UI, relief=tk.FLAT,
-            padx=8, cursor="hand2",
-            activebackground="#4a4a6a",
+            font=FONT_HEAD, relief=tk.FLAT,
+            padx=14, cursor="hand2",
+            activebackground="#4a4a6a", activeforeground=FG_TEXT,
             state=tk.DISABLED,
         )
-        self.send_btn.pack(side=tk.LEFT)
+        self.send_btn.pack(side=tk.RIGHT, padx=(4, 8), pady=6)
 
     # ── GIMMEH input handling ─────────────────────────────────────────────
 
@@ -332,15 +374,24 @@ class App:
     def _refresh_symbol_table(self, variables: dict):
         self._clear_tree(self.symbol_tree)
         for name, lv in variables.items():
-            if lv.type == 'NUMBAR':
+            if lv.type == "NUMBAR":
                 display_val = f"{lv.value:.2f}" if isinstance(lv.value, float) else str(lv.value)
-            elif lv.type == 'TROOF':
+            elif lv.type == "TROOF":
                 display_val = "WIN" if lv.value else "FAIL"
-            elif lv.type == 'NOOB':
+            elif lv.type == "NOOB":
                 display_val = "NOOB"
             else:
                 display_val = str(lv.value)
             self.symbol_tree.insert("", tk.END, values=(name, lv.type, display_val))
+
+    # ── Clear workspace (keeps editor intact) ─────────────────────────────
+
+    def _clear_all(self):
+        self._clear_tree(self.token_tree)
+        self._clear_tree(self.symbol_tree)
+        self.console.config(state=tk.NORMAL)
+        self.console.delete("1.0", tk.END)
+        self.console.config(state=tk.DISABLED)
 
     # ── Run pipeline ──────────────────────────────────────────────────────
 
@@ -353,7 +404,6 @@ class App:
         self._clear_tree(self.token_tree)
         self._clear_tree(self.symbol_tree)
         self._log("─" * 48 + "\n", tag="dim")
-        self._log("Running...\n", tag="dim")
 
         # 1. Lex
         lexer  = Lexer(source)
@@ -366,10 +416,7 @@ class App:
         if lexer.errors:
             for err in lexer.errors:
                 self._log(f"[LEXER ERROR] {err}\n", tag="error")
-            self._log(f"{len(visible)} token(s) found with {len(lexer.errors)} error(s).\n", tag="error")
             return
-
-        self._log(f"Tokenization complete — {len(visible)} tokens found.\n", tag="ok")
 
         # 2. Parse
         parser = Parser(tokens)
@@ -380,14 +427,8 @@ class App:
                 self._log(f"[SYNTAX ERROR] {err}\n", tag="error")
             return
 
-        self._log("Syntax analysis complete — no syntax errors.\n", tag="ok")
-        self._log("\nParse Tree:\n", tag="dim")
-        self._log(tree_to_string(tree) + "\n", tag="dim")
-
         # 3. Interpret (in background thread)
         self.run_btn.config(state=tk.DISABLED)
-        self._log("─" * 48 + "\n", tag="dim")
-        self._log("Executing...\n", tag="dim")
 
         interp = Interpreter(
             output_fn=self._interp_output,
@@ -406,8 +447,6 @@ class App:
         if interp.errors:
             for err in interp.errors:
                 self._log(f"[RUNTIME ERROR] {err}\n", tag="error")
-        else:
-            self._log("Execution complete.\n", tag="ok")
         self.run_btn.config(state=tk.NORMAL)
         self._disable_input()
 
@@ -424,16 +463,22 @@ class App:
     def _make_treeview(self, parent, cols, headings, widths) -> ttk.Treeview:
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("Dark.Treeview",
-                        background=BG_TABLE, foreground=FG_TEXT,
-                        fieldbackground=BG_TABLE, rowheight=24,
-                        font=FONT_CODE)
-        style.configure("Dark.Treeview.Heading",
-                        background=BG_HEADER, foreground=FG_ACCENT,
-                        font=FONT_HEAD, relief=tk.FLAT)
-        style.map("Dark.Treeview",
-                  background=[("selected", BG_HEADER)],
-                  foreground=[("selected", FG_TEXT)])
+        style.configure(
+            "Dark.Treeview",
+            background=BG_TABLE, foreground=FG_TEXT,
+            fieldbackground=BG_TABLE, rowheight=24,
+            font=FONT_CODE,
+        )
+        style.configure(
+            "Dark.Treeview.Heading",
+            background=BG_HEADER, foreground=FG_ACCENT,
+            font=FONT_HEAD, relief=tk.FLAT,
+        )
+        style.map(
+            "Dark.Treeview",
+            background=[("selected", BG_HEADER)],
+            foreground=[("selected", FG_TEXT)],
+        )
 
         container = tk.Frame(parent, bg=BG_PANEL)
         container.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
@@ -441,8 +486,10 @@ class App:
         vsb = tk.Scrollbar(container, orient=tk.VERTICAL)
         vsb.pack(side=tk.RIGHT, fill=tk.Y)
 
-        tree = ttk.Treeview(container, columns=cols, show="headings",
-                            style="Dark.Treeview", yscrollcommand=vsb.set)
+        tree = ttk.Treeview(
+            container, columns=cols, show="headings",
+            style="Dark.Treeview", yscrollcommand=vsb.set,
+        )
         vsb.config(command=tree.yview)
 
         for col, heading, width in zip(cols, headings, widths):
@@ -463,7 +510,7 @@ class App:
 
     def _load_file(self, path: str):
         try:
-            with open(path, "r") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 source = f.read()
         except Exception as e:
             messagebox.showerror("Error", f"Could not open file:\n{e}")
@@ -471,8 +518,7 @@ class App:
 
         self.current_file = path
         filename = os.path.basename(path)
-        self.file_label.config(text=filename)
-        self.explorer_label.config(text=path, fg=FG_TEXT)
+        self.explorer_label.config(text=f"📄  {filename}", fg=FG_TEXT)
         self.root.title(f"LOLCode Interpreter — {filename}")
 
         self.editor.delete("1.0", tk.END)
@@ -481,30 +527,29 @@ class App:
         self._log(f"Loaded: {path}\n", tag="dim")
 
     def _save_file(self):
-      path = self.current_file
-      if not path:
-          path = filedialog.asksaveasfilename(
-              title="Save LOLCode file",
-              defaultextension=".lol",
-              filetypes=[("LOLCode files", "*.lol"), ("All files", "*.*")],
-          )
-          if not path:
-              return
+        path = self.current_file
+        if not path:
+            path = filedialog.asksaveasfilename(
+                title="Save LOLCode file",
+                defaultextension=".lol",
+                filetypes=[("LOLCode files", "*.lol"), ("All files", "*.*")],
+            )
+            if not path:
+                return
 
-      try:
-          content = self.editor.get("1.0", "end-1c")
-          with open(path, "w", encoding="utf-8") as f:
-              f.write(content)
-      except Exception as e:
-          messagebox.showerror("Error", f"Could not save file:\n{e}")
-          return
+        try:
+            content = self.editor.get("1.0", "end-1c")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(content)
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not save file:\n{e}")
+            return
 
-      self.current_file = path
-      filename = os.path.basename(path)
-      self.file_label.config(text=filename)
-      self.explorer_label.config(text=path, fg=FG_TEXT)
-      self.root.title(f"LOLCode Interpreter — {filename}")
-      self._log(f"Saved: {path}\n", tag="dim")
+        self.current_file = path
+        filename = os.path.basename(path)
+        self.explorer_label.config(text=f"📄  {filename}", fg=FG_TEXT)
+        self.root.title(f"LOLCode Interpreter — {filename}")
+        self._log(f"Saved: {path}\n", tag="dim")
 
     def _log(self, text: str, tag: str = ""):
         self.console.config(state=tk.NORMAL)
