@@ -34,6 +34,220 @@ FONT_HEAD  = ("Segoe UI", 10, "bold")
 FONT_TITLE = ("Segoe UI", 12, "bold")
 
 
+class FileBrowserDialog(tk.Toplevel):
+    """Dark-themed file picker with Back, Up, and Home navigation."""
+
+    def __init__(self, parent: tk.Tk, initial_dir: str):
+        super().__init__(parent)
+        self.title("Open LOLCode File")
+        self.configure(bg=BG_DARK)
+        self.geometry("680x460")
+        self.minsize(520, 360)
+        self.transient(parent)
+        self.grab_set()
+
+        self.selected_file: str | None = None
+        self.current_dir: str = os.path.abspath(initial_dir)
+        self.history: list[str] = []
+        self.show_all_files = tk.BooleanVar(value=False)
+
+        self._build_dialog()
+        self._populate_dir(self.current_dir, record_history=False)
+
+        # Center over parent window
+        self.update_idletasks()
+        px = parent.winfo_rootx() + (parent.winfo_width() - self.winfo_width()) // 2
+        py = parent.winfo_rooty() + (parent.winfo_height() - self.winfo_height()) // 2
+        self.geometry(f"+{max(0, px)}+{max(0, py)}")
+
+        self.bind("<Escape>", lambda e: self.destroy())
+        self.bind("<BackSpace>", lambda e: self._go_back())
+
+    def _build_dialog(self):
+        # Navigation bar
+        nav = tk.Frame(self, bg=BG_PANEL, pady=6, padx=8)
+        nav.pack(fill=tk.X, padx=8, pady=(8, 4))
+
+        self.back_btn = tk.Button(
+            nav, text="← Back",
+            command=self._go_back,
+            bg=BG_HEADER, fg=FG_TEXT,
+            font=FONT_HEAD, relief=tk.FLAT,
+            padx=10, pady=3, cursor="hand2",
+            activebackground="#4a4a6a", activeforeground=FG_TEXT,
+            state=tk.DISABLED,
+        )
+        self.back_btn.pack(side=tk.LEFT, padx=(0, 4))
+
+        self.up_btn = tk.Button(
+            nav, text="↑ Up",
+            command=self._go_up,
+            bg=BG_HEADER, fg=FG_TEXT,
+            font=FONT_UI, relief=tk.FLAT,
+            padx=10, pady=3, cursor="hand2",
+            activebackground="#4a4a6a", activeforeground=FG_TEXT,
+        )
+        self.up_btn.pack(side=tk.LEFT, padx=(0, 4))
+
+        home_btn = tk.Button(
+            nav, text="⌂ Project",
+            command=self._go_project,
+            bg=BG_HEADER, fg=FG_ACCENT,
+            font=FONT_UI, relief=tk.FLAT,
+            padx=10, pady=3, cursor="hand2",
+            activebackground="#4a4a6a", activeforeground=FG_ACCENT,
+        )
+        home_btn.pack(side=tk.LEFT, padx=(0, 8))
+
+        self.path_var = tk.StringVar(value=self.current_dir)
+        path_entry = tk.Entry(
+            nav, textvariable=self.path_var,
+            bg=BG_EDITOR, fg=FG_TEXT,
+            insertbackground=FG_TEXT,
+            font=FONT_CODE, relief=tk.FLAT,
+        )
+        path_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=3, padx=(0, 4))
+        path_entry.bind("<Return>", lambda e: self._navigate_to(self.path_var.get()))
+
+        # File list container
+        list_frame = tk.Frame(self, bg=BG_PANEL)
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=4)
+
+        vsb = tk.Scrollbar(list_frame, orient=tk.VERTICAL)
+        vsb.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.listbox = tk.Listbox(
+            list_frame,
+            bg=BG_EDITOR, fg=FG_TEXT,
+            selectbackground=BG_HEADER, selectforeground=FG_ACCENT,
+            font=FONT_CODE, relief=tk.FLAT,
+            activestyle="none",
+            yscrollcommand=vsb.set,
+        )
+        self.listbox.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+        vsb.config(command=self.listbox.yview)
+
+        self.listbox.bind("<Double-Button-1>", self._on_double_click)
+        self.listbox.bind("<Return>", self._on_double_click)
+
+        # Bottom action bar
+        bottom = tk.Frame(self, bg=BG_PANEL, pady=6, padx=8)
+        bottom.pack(fill=tk.X, padx=8, pady=(4, 8))
+
+        filter_cb = tk.Checkbutton(
+            bottom, text="Show all file types",
+            variable=self.show_all_files,
+            command=lambda: self._populate_dir(self.current_dir, record_history=False),
+            bg=BG_PANEL, fg=FG_DIM,
+            selectcolor=BG_EDITOR,
+            activebackground=BG_PANEL, activeforeground=FG_TEXT,
+            font=FONT_UI,
+        )
+        filter_cb.pack(side=tk.LEFT)
+
+        cancel_btn = tk.Button(
+            bottom, text="Cancel",
+            command=self.destroy,
+            bg=BG_HEADER, fg=FG_TEXT,
+            font=FONT_UI, relief=tk.FLAT,
+            padx=14, pady=4, cursor="hand2",
+            activebackground="#4a4a6a", activeforeground=FG_TEXT,
+        )
+        cancel_btn.pack(side=tk.RIGHT, padx=(6, 0))
+
+        open_btn = tk.Button(
+            bottom, text="Open",
+            command=self._confirm_selection,
+            bg=FG_GREEN, fg=BG_DARK,
+            font=FONT_HEAD, relief=tk.FLAT,
+            padx=18, pady=4, cursor="hand2",
+            activebackground="#7dc97a", activeforeground=BG_DARK,
+        )
+        open_btn.pack(side=tk.RIGHT)
+
+    def _populate_dir(self, target_dir: str, record_history: bool = True):
+        if not os.path.isdir(target_dir):
+            messagebox.showerror("Folder Not Found", f"Cannot access:\n{target_dir}", parent=self)
+            return
+
+        if record_history and target_dir != self.current_dir:
+            self.history.append(self.current_dir)
+
+        self.current_dir = os.path.abspath(target_dir)
+        self.path_var.set(self.current_dir)
+        self.back_btn.config(state=tk.NORMAL if self.history else tk.DISABLED)
+
+        self.listbox.delete(0, tk.END)
+        self._entries: list[tuple[str, str]] = []  # (kind, full_path)
+
+        try:
+            items = os.listdir(self.current_dir)
+        except PermissionError:
+            messagebox.showerror("Access Denied", "Permission denied for this folder.", parent=self)
+            return
+
+        dirs = sorted([d for d in items if os.path.isdir(os.path.join(self.current_dir, d))], key=str.lower)
+        files = sorted([f for f in items if os.path.isfile(os.path.join(self.current_dir, f))], key=str.lower)
+
+        for d in dirs:
+            full = os.path.join(self.current_dir, d)
+            self._entries.append(("dir", full))
+            self.listbox.insert(tk.END, f"📁  {d}/")
+            self.listbox.itemconfig(tk.END, fg=FG_ACCENT)
+
+        for f in files:
+            if not self.show_all_files.get() and not f.lower().endswith(".lol"):
+                continue
+            full = os.path.join(self.current_dir, f)
+            self._entries.append(("file", full))
+            self.listbox.insert(tk.END, f"📄  {f}")
+            self.listbox.itemconfig(tk.END, fg=FG_TEXT)
+
+    def _navigate_to(self, path: str):
+        path = path.strip()
+        if os.path.isfile(path) and path.lower().endswith(".lol"):
+            self.selected_file = path
+            self.destroy()
+            return
+        self._populate_dir(path, record_history=True)
+
+    def _go_back(self):
+        if not self.history:
+            return
+        prev = self.history.pop()
+        self._populate_dir(prev, record_history=False)
+
+    def _go_up(self):
+        parent = os.path.dirname(self.current_dir)
+        if parent and parent != self.current_dir:
+            self._populate_dir(parent, record_history=True)
+
+    def _go_project(self):
+        self._populate_dir(os.getcwd(), record_history=True)
+
+    def _on_double_click(self, event=None):
+        sel = self.listbox.curselection()
+        if not sel:
+            return
+        kind, full_path = self._entries[sel[0]]
+        if kind == "dir":
+            self._populate_dir(full_path, record_history=True)
+        else:
+            self.selected_file = full_path
+            self.destroy()
+
+    def _confirm_selection(self):
+        sel = self.listbox.curselection()
+        if not sel:
+            return
+        kind, full_path = self._entries[sel[0]]
+        if kind == "dir":
+            self._populate_dir(full_path, record_history=True)
+        else:
+            self.selected_file = full_path
+            self.destroy()
+
+
 class App:
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -500,13 +714,11 @@ class App:
         return tree
 
     def _open_file(self):
-        path = filedialog.askopenfilename(
-            title="Open LOLCode file",
-            filetypes=[("LOLCode files", "*.lol"), ("All files", "*.*")],
-        )
-        if not path:
-            return
-        self._load_file(path)
+        start_dir = os.path.dirname(self.current_file) if self.current_file else os.getcwd()
+        dialog = FileBrowserDialog(self.root, initial_dir=start_dir)
+        self.root.wait_window(dialog)
+        if dialog.selected_file:
+            self._load_file(dialog.selected_file)
 
     def _load_file(self, path: str):
         try:
