@@ -36,6 +36,7 @@ KEYWORDS = [
     'MAEK',
     'IS NOW A',
     'I HAS A',
+    'HAS A',          # ec08: nums HAS A slot
     'I IZ',
     'IM IN YR', 'IM OUTTA YR',
     'HOW IZ I',
@@ -65,7 +66,7 @@ KEYWORDS = [
 ]
 
 # Type literals used in typecasting
-TYPE_LITERALS = {'TROOF', 'NOOB', 'NUMBR', 'NUMBAR', 'YARN', 'TYPE'}
+TYPE_LITERALS = {'TROOF', 'NOOB', 'NUMBR', 'NUMBAR', 'YARN', 'TYPE', 'BUKKIT'}
 
 # Boolean literals
 TROOF_LITERALS = {'WIN', 'FAIL'}

@@ -5,7 +5,7 @@
 import sys
 
 from parser.nodes import Node
-from .values import LolValue, NOOB_VALUE, TYPE_NUMBR, TYPE_NUMBAR
+from .values import LolValue, NOOB_VALUE, TYPE_NUMBR, TYPE_NUMBAR, TYPE_BUKKIT
 from .signals import RuntimeError_, GtfoSignal, FoundYrSignal
 from .typecasting import typecast, to_yarn, to_troof, coerce_arithmetic
 from .environment import Environment
@@ -63,7 +63,10 @@ class Interpreter:
 
     def _exec_declarations(self, node: Node):
         for decl in node.children:
-            self._exec_declaration(decl, self.env)
+            if decl.label == 'SlotDeclaration':
+                self._exec_slot_declaration(decl, self.env)
+            else:
+                self._exec_declaration(decl, self.env)
 
     def _exec_declaration(self, node: Node, env: Environment):
         name = node.children[0].value
@@ -106,6 +109,8 @@ class Interpreter:
         elif label == 'Return':
             val = self._eval_expr(node.children[0], env)
             raise FoundYrSignal(val)
+        elif label == 'SlotAssignment':
+            self._exec_slot_assignment(node, env)
         elif label == 'Function':
             self.functions[node.value] = node
         else:
@@ -279,6 +284,10 @@ class Interpreter:
             return self._eval_typecast(node, env)
         if label == 'FunctionCall':
             return self._eval_call(node, env)
+        if label == 'SlotAccess':
+            return self._eval_slot_access(node, env)
+        if label == 'NewBukkit':
+            return LolValue({}, TYPE_BUKKIT)
 
         raise RuntimeError_(f'Unknown expression node: {label}')
 
@@ -292,7 +301,7 @@ class Interpreter:
         if 'NUMBAR' in label:
             return LolValue(float(raw), TYPE_NUMBAR)
         if 'YARN' in label:
-            return LolValue(raw[1:-1], 'YARN')   # strip surrounding quotes
+            return LolValue(self._unescape(raw[1:-1]), 'YARN')   # strip quotes, apply escapes
         if 'TROOF' in label:
             return LolValue(raw == 'WIN', 'TROOF')
         raise RuntimeError_(f'Unknown literal type in node: {label}')
@@ -433,6 +442,56 @@ class Interpreter:
 
         env.set_it(result)
         return result
+
+    #YARN escape sequences (ec02): :) newline, :> tab, :" quote, :: colon
+    def _unescape(self, s: str) -> str:
+        table = {')': '\n', '>': '\t', '"': '"', ':': ':'}
+        out, i = [], 0
+        while i < len(s):
+            if s[i] == ':' and i + 1 < len(s) and s[i + 1] in table:
+                out.append(table[s[i + 1]])
+                i += 2
+            else:
+                out.append(s[i])
+                i += 1
+        return ''.join(out)
+
+    #BUKKIT / arrays (ec08)
+    def _get_bukkit(self, name: str, env: Environment) -> LolValue:
+        b = env.get(name)
+        if b.type != TYPE_BUKKIT:
+            raise RuntimeError_(f'"{name}" is not a BUKKIT')
+        return b
+
+    def _exec_slot_declaration(self, node: Node, env: Environment):
+        name   = node.children[0].value
+        slot   = node.children[1].value
+        bukkit = self._get_bukkit(name, env)
+        if len(node.children) > 2:
+            val = self._eval_expr(node.children[2].children[0], env)
+        else:
+            val = NOOB_VALUE
+        bukkit.value[slot] = val
+        self._notify_update(env)
+
+    def _eval_slot_access(self, node: Node, env: Environment) -> LolValue:
+        name   = node.children[0].value
+        slot   = node.children[1].value
+        bukkit = self._get_bukkit(name, env)
+        if slot not in bukkit.value:
+            raise RuntimeError_(f'BUKKIT "{name}" has no slot "{slot}"')
+        return bukkit.value[slot]
+
+    def _exec_slot_assignment(self, node: Node, env: Environment):
+        name   = node.children[0].value
+        slot   = node.children[1].value
+        bukkit = self._get_bukkit(name, env)
+        if slot not in bukkit.value:
+            raise RuntimeError_(f'BUKKIT "{name}" has no slot "{slot}"')
+        val = self._eval_expr(node.children[2], env)
+        bukkit.value[slot] = val
+        env.set_it(val)
+        self._notify_update(env)
 
     #Notify symbol table
     def _notify_update(self, env: Environment):
