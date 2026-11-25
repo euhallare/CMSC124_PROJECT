@@ -59,6 +59,13 @@ class Lexer:
                 i += 1
                 continue
 
+            # Join continued lines (ec06: trailing ...)
+            line, continued = self._strip_continuation(line)
+            while continued and i + 1 < len(lines):
+                i += 1
+                nxt, continued = self._strip_continuation(lines[i].strip())
+                line = line + ' ' + nxt
+
             # Tokenize the line
             line_tokens = self._tokenize_line(line, line_num)
             self.tokens.extend(line_tokens)
@@ -67,6 +74,31 @@ class Lexer:
 
         self.tokens.append(Token(TT_EOF, 'EOF', len(lines) + 1))
         return self.tokens
+
+    def _strip_continuation(self, line):
+        """Return (content, continued). A trailing '...' outside a YARN/comment continues the line."""
+        i = 0
+        in_str = False
+        while i < len(line):
+            c = line[i]
+            if in_str:
+                if c == ':' and i + 1 < len(line):
+                    i += 2
+                    continue
+                if c == '"':
+                    in_str = False
+                i += 1
+                continue
+            if c == '"':
+                in_str = True
+            elif (line.startswith('BTW', i)
+                  and (i == 0 or line[i - 1] == ' ')
+                  and (i + 3 == len(line) or line[i + 3] == ' ')):
+                return line, False
+            elif line.startswith('...', i) and line[i + 3:].strip() == '':
+                return line[:i].rstrip(), True
+            i += 1
+        return line, False
 
     def _tokenize_line(self, line, line_num):
         tokens = []
@@ -86,7 +118,8 @@ class Lexer:
                 break  # rest of line is comment
 
             # YARN literal
-            yarn_match = re.match(r'^"[^"]*"', remaining)
+            yarn_match = (re.match(r'^"(?:[^":]|:.)*"', remaining)   # supports :" escape (ec02)
+                          or re.match(r'^"[^"]*"', remaining))
             if yarn_match:
                 tokens.append(Token(TT_YARN, yarn_match.group(), line_num))
                 pos += yarn_match.end()
@@ -106,16 +139,28 @@ class Lexer:
                 pos += numbr_match.end()
                 continue
 
-            # Separator (+)
-            if remaining[0] == '+':
-                tokens.append(Token(TT_SEPARATOR, '+', line_num))
+            # Separator (+ between VISIBLE operands, ! suppresses newline)
+            if remaining[0] in '+!':
+                tokens.append(Token(TT_SEPARATOR, remaining[0], line_num))
                 pos += 1
+                continue
+
+            # Soft line break (ec01): comma outside YARN/comment acts like a newline
+            if remaining[0] == ',':
+                tokens.append(Token(TT_NEWLINE, '\\n', line_num))
+                pos += 1
+                continue
+
+            # Slot accessor 'Z (ec08)
+            if remaining.startswith("'Z") and (len(remaining) == 2 or remaining[2] in ' ,'):
+                tokens.append(Token(TT_KEYWORD, "'Z", line_num))
+                pos += 2
                 continue
 
             # Keywords (longest-first to avoid partial matches)
             matched_keyword = False
             for kw in KEYWORDS:
-                pattern = r'^' + re.escape(kw) + r'(?=\s|$)'
+                pattern = r'^' + re.escape(kw) + r'(?=[\s,]|$)'
                 if re.match(pattern, remaining):
                     tokens.append(Token(TT_KEYWORD, kw, line_num))
                     pos += len(kw)
