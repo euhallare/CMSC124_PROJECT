@@ -132,12 +132,15 @@ class Parser:
             tok = self.peek()
             if tok.token_type == TT_EOF:
                 raise ParseError('expected BUHBYE, found end of file', tok.line_num)
-            if not self.is_kw('I HAS A'):
+            if self.is_kw('I HAS A'):
+                node.add(self.parse_declaration())
+            elif tok.token_type == TT_IDENTIFIER and self.is_kw('HAS A', 1):
+                node.add(self.parse_slot_declaration())
+            else:
                 raise ParseError(
                     'only variable declarations (I HAS A) are allowed inside WAZZUP, found ' + self.describe(tok),
                     tok.line_num,
                 )
-            node.add(self.parse_declaration())
         self.expect_kw('BUHBYE')
         self.end_of_line()
         return node
@@ -150,7 +153,13 @@ class Parser:
         if self.is_kw('ITZ'):
             self.advance()
             init = Node('Initializer')
-            init.add(self.parse_expression(True))
+            if (self.is_kw('A') and self.peek(1).token_type == TT_TYPE
+                    and self.peek(1).value == 'BUKKIT'):
+                self.advance()
+                self.advance()
+                init.add(Node('NewBukkit'))
+            else:
+                init.add(self.parse_expression(True))
             decl.add(init)
         self.end_of_line()
         return decl
@@ -212,6 +221,10 @@ class Parser:
             raise ParseError('unexpected ' + kw, tok.line_num)
 
         if tok.token_type == TT_IDENTIFIER:
+            if self.is_kw("'Z", 1) and self.is_kw('R', 3):
+                return self.parse_slot_assignment()
+            if self.is_kw('HAS A', 1):
+                raise ParseError('slots must be declared inside the WAZZUP section', tok.line_num)
             if self.is_kw('R', 1):
                 return self.parse_assignment()
             if self.is_kw('IS NOW A', 1):
@@ -262,6 +275,33 @@ class Parser:
         node = Node('Recast')
         node.add(Node('Variable', name.value))
         node.add(Node('Type', type_tok.value))
+        self.end_of_line()
+        return node
+
+    def parse_slot_declaration(self):
+        name = self.expect_type(TT_IDENTIFIER, 'a variable name')
+        self.expect_kw('HAS A')
+        slot = self.expect_type(TT_IDENTIFIER, 'a slot name')
+        node = Node('SlotDeclaration')
+        node.add(Node('Variable', name.value))
+        node.add(Node('Slot', slot.value))
+        if self.is_kw('ITZ'):
+            self.advance()
+            init = Node('Initializer')
+            init.add(self.parse_expression(True))
+            node.add(init)
+        self.end_of_line()
+        return node
+
+    def parse_slot_assignment(self):
+        name = self.expect_type(TT_IDENTIFIER, 'a variable name')
+        self.expect_kw("'Z")
+        slot = self.expect_type(TT_IDENTIFIER, 'a slot name')
+        self.expect_kw('R')
+        node = Node('SlotAssignment')
+        node.add(Node('Variable', name.value))
+        node.add(Node('Slot', slot.value))
+        node.add(self.parse_expression(True))
         self.end_of_line()
         return node
 
@@ -426,6 +466,13 @@ class Parser:
 
         if tok.token_type == TT_IDENTIFIER:
             self.advance()
+            if self.is_kw("'Z"):
+                self.advance()
+                slot = self.expect_type(TT_IDENTIFIER, 'a slot name')
+                node = Node('SlotAccess')
+                node.add(Node('Variable', tok.value))
+                node.add(Node('Slot', slot.value))
+                return node
             return Node('Variable', tok.value)
 
         if tok.token_type == TT_KEYWORD:
