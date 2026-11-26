@@ -1,0 +1,40 @@
+Group EJDB — CMSC 124 S-3L
+LOLCode Interpreter Project
+First Semester AY 2026-2027
+
+CONTRIBUTORS & TASK BREAKDOWN
+==============================
+
+1. Eu Dasein Hallare — Group Lead
+   - Overall system architecture and design
+   - Lexical analyzer (lexer.py, tokens.py) - full implementation
+   - Parser / syntax analyzer (parser.py, nodes.py) - full implementation
+   - Interpreter / semantic analyzer (interpreter.py) - full implementation
+   - Environment and symbol table (environment.py)
+   - GUI implementation (gui.py)
+   - Extra credit features (soft line breaks, line continuation,
+     YARN escape sequences, MEBBE, loop/if/switch nesting, arrays)
+   - Integration testing, debugging, and final submission packaging
+
+2. John Denmark Hernandez
+   - Typecasting logic (typecasting.py)
+   - Assisted in lexer development and keyword matching
+   - Wrote and organized test cases
+   - Helped debug loop and switch-case execution
+   - Contributed to planning documents (regular expressions)
+   - General testing and bug reporting
+
+3. Dash Matthew Gonzales
+   - Runtime values and signals (values.py, signals.py)
+   - Assisted in parser development and testing
+   - Helped with typecasting rules and edge cases
+   - Contributed to bonus/extra credit test programs
+   - Contributed to planning documents (grammar)
+   - General testing and bug reporting
+
+4. Maynald Benj Rodio
+   - Assisted in GUI layout and styling
+   - Helped prepare planning documents (regular expressions, grammar)
+   - Wrote additional test cases for edge cases
+   - Helped with README.md documentation
+   - General testing and bug reporting
