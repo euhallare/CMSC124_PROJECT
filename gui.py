@@ -34,6 +34,10 @@ FONT_HEAD  = ("Segoe UI", 10, "bold")
 FONT_TITLE = ("Segoe UI", 12, "bold")
 
 
+class _ExecutionCancelled(Exception):
+    """Internal signal used to abort a background interpreter thread cleanly."""
+
+
 class FileBrowserDialog(tk.Toplevel):
     """Dark-themed file picker with Back, Up, and Home navigation."""
 
@@ -258,7 +262,9 @@ class App:
 
         self.current_file: str | None = None
 
-        # ── GIMMEH input synchronisation ──────────────────────────────────
+        # ── GIMMEH input & run lifecycle synchronisation ──────────────────
+        self._run_id: int = 0
+        self._cancelled: bool = False
         self._waiting_for_input: bool = False
         self._input_event: threading.Event = threading.Event()
         self._input_value: str = ""
@@ -540,7 +546,7 @@ class App:
         )
         self.send_btn.pack(side=tk.RIGHT, padx=(4, 8), pady=6)
 
-    # ── GIMMEH input handling ─────────────────────────────────────────────
+    # ── GIMMEH input handling & cancellation ──────────────────────────────
 
     def _enable_input(self):
         self._waiting_for_input = True
@@ -565,23 +571,49 @@ class App:
         self._input_value = value
         self._input_event.set()
 
-    # ── Interpreter callbacks (called from worker thread) ─────────────────
+    def _cancel_execution(self):
+        """Invalidate any active/waiting run and reset input & execute controls."""
+        self._run_id += 1
+        self._cancelled = True
+        self._input_value = ""
+        self._input_event.set()
 
-    def _interp_output(self, text, end="\n"):
-        full = text + end
-        self.root.after(0, lambda t=full: self._log(t))
+        self.console_input.config(state=tk.NORMAL)
+        self.console_input.delete(0, tk.END)
+        self._disable_input()
+        self.run_btn.config(state=tk.NORMAL)
 
-    def _interp_input(self, prompt: str) -> str:
-        self._input_event.clear()
-        self.root.after(0, lambda p=prompt: (
-            self._log(f"{p}", tag="prompt"),
-            self._enable_input(),
-        ))
-        self._input_event.wait()
-        return self._input_value
+    # ── Interpreter callbacks (bound to a specific run_id) ────────────────
 
-    def _interp_update(self, variables: dict):
-        self.root.after(0, lambda d=dict(variables): self._refresh_symbol_table(d))
+    def _make_callbacks(self, run_id: int):
+        def output_fn(text, end="\n"):
+            if self._cancelled or run_id != self._run_id:
+                raise _ExecutionCancelled()
+            full = text + end
+            self.root.after(0, lambda t=full: self._log(t) if run_id == self._run_id else None)
+
+        def input_fn(prompt: str) -> str:
+            if self._cancelled or run_id != self._run_id:
+                raise _ExecutionCancelled()
+            self._input_event.clear()
+            self.root.after(0, lambda p=prompt: (
+                (self._log(f"{p}", tag="prompt"), self._enable_input())
+                if run_id == self._run_id else None
+            ))
+            self._input_event.wait()
+            if self._cancelled or run_id != self._run_id:
+                raise _ExecutionCancelled()
+            return self._input_value
+
+        def update_fn(variables: dict):
+            if self._cancelled or run_id != self._run_id:
+                raise _ExecutionCancelled()
+            self.root.after(
+                0,
+                lambda d=dict(variables): self._refresh_symbol_table(d) if run_id == self._run_id else None
+            )
+
+        return output_fn, input_fn, update_fn
 
     # ── Symbol table refresh ──────────────────────────────────────────────
 
@@ -601,6 +633,7 @@ class App:
     # ── Clear workspace (keeps editor intact) ─────────────────────────────
 
     def _clear_all(self):
+        self._cancel_execution()
         self._clear_tree(self.token_tree)
         self._clear_tree(self.symbol_tree)
         self.console.config(state=tk.NORMAL)
@@ -642,22 +675,33 @@ class App:
             return
 
         # 3. Interpret (in background thread)
+        self._run_id += 1
+        current_run_id = self._run_id
+        self._cancelled = False
+        self._input_event.clear()
         self.run_btn.config(state=tk.DISABLED)
 
+        output_fn, input_fn, update_fn = self._make_callbacks(current_run_id)
+
         interp = Interpreter(
-            output_fn=self._interp_output,
-            input_fn=self._interp_input,
-            update_fn=self._interp_update,
+            output_fn=output_fn,
+            input_fn=input_fn,
+            update_fn=update_fn,
         )
 
         def worker():
-            interp.run(tree)
-            self.root.after(0, lambda: self._run_finished(interp))
+            try:
+                interp.run(tree)
+            except _ExecutionCancelled:
+                return
+            self.root.after(0, lambda: self._run_finished(interp, current_run_id))
 
         t = threading.Thread(target=worker, daemon=True)
         t.start()
 
-    def _run_finished(self, interp: Interpreter):
+    def _run_finished(self, interp: Interpreter, run_id: int):
+        if self._cancelled or run_id != self._run_id:
+            return
         if interp.errors:
             for err in interp.errors:
                 self._log(f"[RUNTIME ERROR] {err}\n", tag="error")
@@ -728,6 +772,7 @@ class App:
             messagebox.showerror("Error", f"Could not open file:\n{e}")
             return
 
+        self._cancel_execution()
         self.current_file = path
         filename = os.path.basename(path)
         self.explorer_label.config(text=f"📄  {filename}", fg=FG_TEXT)
