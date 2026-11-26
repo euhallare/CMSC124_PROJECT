@@ -23,21 +23,22 @@ A complete LOLCODE interpreter developed for **CMSC 124 - S-3L (Group EJDB)**. I
 
 ```text
 CMSC124_PROJECT/
-├── gui.py                 # Tkinter graphical application
-├── lexer/
-│   ├── lexer.py           # Lexical analyzer
-│   └── tokens.py          # Token types and language keywords
-├── parser/
-│   ├── parser.py          # Recursive-descent parser
-│   └── nodes.py           # AST node definitions
-├── interpreter/
-│   ├── interpreter.py     # AST executor
-│   ├── environment.py     # Variable and symbol-table environment
-│   ├── typecasting.py     # LOLCODE type conversion
-│   ├── values.py          # Runtime value types
-│   └── signals.py         # Return and loop-control signals
-├── given_test/            # Provided base test programs
-├── additional_test/       # Additional feature and edge-case tests
+├── src/
+│   ├── gui.py             # Tkinter graphical application
+│   ├── lexer/
+│   │   ├── lexer.py       # Lexical analyzer
+│   │   └── tokens.py      # Token types and language keywords
+│   ├── parser/
+│   │   ├── parser.py      # Recursive-descent parser
+│   │   └── nodes.py       # AST node definitions
+│   ├── interpreter/
+│   │   ├── interpreter.py # AST executor
+│   │   ├── environment.py # Variable and symbol-table environment
+│   │   ├── typecasting.py # LOLCODE type conversion
+│   │   ├── values.py      # Runtime value types
+│   │   └── signals.py     # Return and loop-control signals
+│   ├── given_test/        # Provided base test programs
+│   └── additional_test/   # Additional feature and edge-case tests
 ├── bonus/                 # Bonus specification test programs
 ├── own_test/              # Custom team test programs
 ├── own_bonus/             # Custom bonus test programs
@@ -62,7 +63,7 @@ The interpreter does not require third-party Python packages.
 From the project root:
 
 ```bash
-python3 gui.py
+python3 src/gui.py
 ```
 
 The GUI lets you:
@@ -81,13 +82,22 @@ You can also open the project root with the built-in file browser and navigate d
 Execute a LOLCODE program:
 
 ```bash
-python3 -m interpreter given_test/01_variables.lol
+cd src
+python3 -m interpreter.interpreter given_test/01_variables.lol
 ```
 
 Tokenize and display the lexemes:
 
 ```bash
-python3 -m lexer given_test/01_variables.lol
+cd src
+python3 -m lexer.lexer given_test/01_variables.lol
+```
+
+Parse and display the syntax tree:
+
+```bash
+cd src
+python3 -m parser.parser given_test/01_variables.lol
 ```
 
 ## Example Program
@@ -108,8 +118,8 @@ KTHXBYE
 
 The repository includes several groups of `.lol` programs:
 
-- `given_test/` - Required baseline interpreter tests
-- `additional_test/` - Supplemental syntax and edge-case tests
+- `src/given_test/` - Required baseline interpreter tests
+- `src/additional_test/` - Supplemental syntax and edge-case tests
 - `bonus/` - Standard bonus feature tests
 - `own_test/` - Team-created test programs
 - `own_bonus/` - Team-created bonus programs
@@ -117,8 +127,9 @@ The repository includes several groups of `.lol` programs:
 Run a test file with the GUI or through the interpreter CLI:
 
 ```bash
-python3 -m interpreter given_test/10_functions.lol
-python3 -m interpreter bonus/ec08_array.lol
+cd src
+python3 -m interpreter.interpreter given_test/10_functions.lol
+python3 -m interpreter.interpreter ../bonus/ec08_array.lol
 ```
 
 ## Supported LOLCODE Concepts
