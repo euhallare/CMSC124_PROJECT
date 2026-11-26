@@ -3,122 +3,131 @@
 ├── __pycache__
 │   ├── interpreter.cpython-312.pyc
 │   └── syntax_analyzer.cpython-312.pyc
-├── additional_test
-│   ├── 1.1_simple_program_no_wazzup.lol
-│   ├── 1.2_simple_program_empty_wazzup.lol
-│   ├── 1.3_var_decl_no_initial_value.lol
-│   ├── 1.4_var_reassignment.lol
-│   ├── 10_loop_increment_no_til.lol
-│   ├── 11_loop_mismatched_closing_name.lol
-│   ├── 12_btw_shares_line_with_statement.lol
-│   ├── 13_obtw_not_on_own_line.lol
-│   ├── 14_visible_multiple_args_plus.lol
-│   ├── 15_function_outside_hai_kthxbye.lol
-│   ├── 16_function_no_parameters.lol
-│   ├── 17_function_two_parameters.lol
-│   ├── 18_function_call_no_parameters.lol
-│   ├── 19_function_call_two_parameters.lol
-│   ├── 20.1_function_return_as_argument.lol
-│   ├── 20_function_call_missing_parameters.lol
-│   ├── 21_switch_case.lol
-│   ├── 22_switch_case_no_breaks.lol
-│   ├── 23_switch_case_no_default.lol
-│   ├── 24_comparison_statements.lol
-│   ├── 25_arithmetic_statements.lol
-│   ├── 2_var_decl_outside_wazzup.lol
-│   ├── 3_if_elseif_else.lol
-│   ├── 4_if_without_else.lol
-│   ├── 5_elseif_without_else.lol
-│   ├── 6_elseif_without_if.lol
-│   ├── 7_else_without_if.lol
-│   ├── 8_nested_all_of_any_of.lol
-│   ├── 9_nested_smoosh.lol
-│   └── txtver
-│       ├── 1.1_simple_program_no_wazzup.txt
-│       ├── 1.2_simple_program_empty_wazzup.txt
-│       ├── 1.3_var_decl_no_initial_value.txt
-│       ├── 1.4_var_reassignment.txt
-│       ├── 10_loop_increment_no_til.txt
-│       ├── 11_loop_mismatched_closing_name.txt
-│       ├── 12_btw_shares_line_with_statement.txt
-│       ├── 13_obtw_not_on_own_line.txt
-│       ├── 14_visible_multiple_args_plus.txt
-│       ├── 15_function_outside_hai_kthxbye.txt
-│       ├── 16_function_no_parameters.txt
-│       ├── 17_function_two_parameters.txt
-│       ├── 18_function_call_no_parameters.txt
-│       ├── 19_function_call_two_parameters.txt
-│       ├── 20.1_function_return_as_argument.txt
-│       ├── 20_function_call_missing_parameters.txt
-│       ├── 21_switch_case.txt
-│       ├── 22_switch_case_no_breaks.txt
-│       ├── 23_switch_case_no_default.txt
-│       ├── 24_comparison_statements.txt
-│       ├── 25_arithmetic_statements.txt
-│       ├── 2_var_decl_outside_wazzup.txt
-│       ├── 3_if_elseif_else.txt
-│       ├── 4_if_without_else.txt
-│       ├── 5_elseif_without_else.txt
-│       ├── 6_elseif_without_if.txt
-│       ├── 7_else_without_if.txt
-│       ├── 8_nested_all_of_any_of.txt
-│       └── 9_nested_smoosh.txt
-├── given_test
-│   ├── 01_variables.lol
-│   ├── 02_gimmeh.lol
-│   ├── 03_arith.lol
-│   ├── 04_smoosh_assign.lol
-│   ├── 05_bool.lol
-│   ├── 06_comparison.lol
-│   ├── 07_ifelse.lol
-│   ├── 08_switch.lol
-│   ├── 09_loops.lol
-│   └── 10_functions.lol
-├── gui.py
-├── interpreter
-│   ├── __init__.py
-│   ├── __pycache__
-│   │   ├── __init__.cpython-312.pyc
-│   │   ├── environment.cpython-312.pyc
-│   │   ├── interpreter.cpython-312.pyc
-│   │   ├── signals.cpython-312.pyc
-│   │   ├── typecasting.cpython-312.pyc
-│   │   └── values.cpython-312.pyc
-│   ├── environment.py
-│   ├── interpreter.py
-│   ├── signals.py
-│   ├── typecasting.py
-│   └── values.py
-├── lexer
-│   ├── __init__.py
-│   ├── __pycache__
-│   │   ├── __init__.cpython-312.pyc
-│   │   ├── lexer.cpython-312.pyc
-│   │   └── tokens.cpython-312.pyc
-│   ├── lexer.py
-│   └── tokens.py
-├── old files
-│   ├── interpreter.py
-│   ├── lexer.py
-│   └── syntax_analyzer.py
-├── own_test
-│   ├── test.lol
-│   ├── test1.lol
-│   ├── test2.lol
-│   ├── test3.lol
-│   ├── test4.lol
-│   ├── test5.lol
-│   ├── test6.lol
-│   ├── test7.lol
-│   └── test8.lol
-├── parser
-│   ├── __init__.py
-│   ├── __pycache__
-│   │   ├── __init__.cpython-312.pyc
-│   │   ├── nodes.cpython-312.pyc
-│   │   └── parser.cpython-312.pyc
-│   ├── nodes.py
-│   └── parser.py
-└── tree.txt
+├── bonus
+│   ├── ec01_soft_line_breaks.lol
+│   ├── ec02_yarn_special_chars.lol
+│   ├── ec03_loop_nesting.lol
+│   ├── ec04_mebbe.lol
+│   ├── ec05_else_if_clauses.lol
+│   ├── ec06_line_continuation.lol
+│   ├── ec07_special_chars_in_strings.lol
+│   ├── ec08_array.lol
+│   ├── ec09_suppress_newline.lol
+│   ├── ec10_flow_control_mixed_nesting.lol
+│   ├── ec11_if_else_nesting.lol
+│   └── ec12_switch_nesting.lol
+├── contributors.txt
+├── src
+│   ├── additional_test
+│   │   ├── 1.1_simple_program_no_wazzup.lol
+│   │   ├── 1.2_simple_program_empty_wazzup.lol
+│   │   ├── 1.3_var_decl_no_initial_value.lol
+│   │   ├── 1.4_var_reassignment.lol
+│   │   ├── 10_loop_increment_no_til.lol
+│   │   ├── 11_loop_mismatched_closing_name.lol
+│   │   ├── 12_btw_shares_line_with_statement.lol
+│   │   ├── 13_obtw_not_on_own_line.lol
+│   │   ├── 14_visible_multiple_args_plus.lol
+│   │   ├── 15_function_outside_hai_kthxbye.lol
+│   │   ├── 16_function_no_parameters.lol
+│   │   ├── 17_function_two_parameters.lol
+│   │   ├── 18_function_call_no_parameters.lol
+│   │   ├── 19_function_call_two_parameters.lol
+│   │   ├── 20.1_function_return_as_argument.lol
+│   │   ├── 20_function_call_missing_parameters.lol
+│   │   ├── 21_switch_case.lol
+│   │   ├── 22_switch_case_no_breaks.lol
+│   │   ├── 23_switch_case_no_default.lol
+│   │   ├── 24_comparison_statements.lol
+│   │   ├── 25_arithmetic_statements.lol
+│   │   ├── 2_var_decl_outside_wazzup.lol
+│   │   ├── 3_if_elseif_else.lol
+│   │   ├── 4_if_without_else.lol
+│   │   ├── 5_elseif_without_else.lol
+│   │   ├── 6_elseif_without_if.lol
+│   │   ├── 7_else_without_if.lol
+│   │   ├── 8_nested_all_of_any_of.lol
+│   │   └── 9_nested_smoosh.lol
+│   ├── given_test
+│   │   ├── 01_variables.lol
+│   │   ├── 02_gimmeh.lol
+│   │   ├── 03_arith.lol
+│   │   ├── 04_smoosh_assign.lol
+│   │   ├── 05_bool.lol
+│   │   ├── 06_comparison.lol
+│   │   ├── 07_ifelse.lol
+│   │   ├── 08_switch.lol
+│   │   ├── 09_loops.lol
+│   │   └── 10_functions.lol
+│   ├── gui.py
+│   ├── interpreter
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-312.pyc
+│   │   │   ├── environment.cpython-312.pyc
+│   │   │   ├── interpreter.cpython-312.pyc
+│   │   │   ├── signals.cpython-312.pyc
+│   │   │   ├── typecasting.cpython-312.pyc
+│   │   │   └── values.cpython-312.pyc
+│   │   ├── environment.py
+│   │   ├── interpreter.py
+│   │   ├── signals.py
+│   │   ├── typecasting.py
+│   │   └── values.py
+│   ├── lexer
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-312.pyc
+│   │   │   ├── lexer.cpython-312.pyc
+│   │   │   └── tokens.cpython-312.pyc
+│   │   ├── lexer.py
+│   │   └── tokens.py
+│   ├── old files
+│   │   ├── interpreter.py
+│   │   ├── lexer.py
+│   │   └── syntax_analyzer.py
+│   ├── own_bonus
+│   │   ├── bonus10_market_day.lol
+│   │   ├── bonus11_nested_if_else.lol
+│   │   ├── bonus12_nested_switches.lol
+│   │   ├── bonus1_soft_line_breaks.lol
+│   │   ├── bonus2_yarn_escapes.lol
+│   │   ├── bonus3_nested_loops.lol
+│   │   ├── bonus4_mebbe.lol
+│   │   ├── bonus5_score_report.lol
+│   │   ├── bonus6_line_continuation.lol
+│   │   ├── bonus7_special_text.lol
+│   │   ├── bonus8_array_bukkit.lol
+│   │   └── bonus9_message_card.lol
+│   ├── own_test
+│   │   ├── test.lol
+│   │   ├── test1.lol
+│   │   ├── test2.lol
+│   │   ├── test3.lol
+│   │   ├── test4.lol
+│   │   ├── test5.lol
+│   │   ├── test6.lol
+│   │   ├── test7.lol
+│   │   └── test8.lol
+│   ├── parser
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-312.pyc
+│   │   │   ├── nodes.cpython-312.pyc
+│   │   │   └── parser.cpython-312.pyc
+│   │   ├── nodes.py
+│   │   └── parser.py
+│   └── tree.txt
+└── updated
+    ├── 01_variables.lol
+    ├── 02_gimmeh.lol
+    ├── 03_arith.lol
+    ├── 04_smoosh_assign.lol
+    ├── 05_bool.lol
+    ├── 06_comparison.lol
+    ├── 07_ifelse.lol
+    ├── 08_switch.lol
+    ├── 09_loops.lol
+    └── 10_functions.lol
 
-13 directories, 109 files
+16 directories, 115 files
