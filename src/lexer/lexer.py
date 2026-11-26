@@ -117,9 +117,10 @@ class Lexer:
                 tokens.append(Token(TT_COMMENT, remaining, line_num))
                 break  # rest of line is comment
 
-            # YARN literal
-            yarn_match = (re.match(r'^"(?:[^":]|:.)*"', remaining)   # supports :" escape (ec02)
-                          or re.match(r'^"[^"]*"', remaining))
+            # YARN literal — colon is only an escape prefix before ) > " :
+            # A bare colon (like in "x: ") is treated as a normal character
+            yarn_match = re.match(r'^"(?:[^":]|:(?=[)>":]))*"', remaining) \
+                        or re.match(r'^"[^"]*"', remaining)
             if yarn_match:
                 tokens.append(Token(TT_YARN, yarn_match.group(), line_num))
                 pos += yarn_match.end()
