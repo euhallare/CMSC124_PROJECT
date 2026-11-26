@@ -82,8 +82,11 @@ class Lexer:
         while i < len(line):
             c = line[i]
             if in_str:
-                if c == ':' and i + 1 < len(line):
-                    i += 2
+                if c == ':' and i + 1 < len(line) and line[i + 1] in ')>o:"':
+                    if line[i + 1] == '"' and (i + 2 >= len(line) or line[i + 2] in ' \t\r\n+,'):
+                        i += 1
+                    else:
+                        i += 2
                     continue
                 if c == '"':
                     in_str = False
@@ -117,14 +120,32 @@ class Lexer:
                 tokens.append(Token(TT_COMMENT, remaining, line_num))
                 break  # rest of line is comment
 
-            # YARN literal — colon is only an escape prefix before ) > " :
-            # A bare colon (like in "x: ") is treated as a normal character
-            yarn_match = re.match(r'^"(?:[^":]|:(?=[)>":]))*"', remaining) \
-                        or re.match(r'^"[^"]*"', remaining)
-            if yarn_match:
-                tokens.append(Token(TT_YARN, yarn_match.group(), line_num))
-                pos += yarn_match.end()
-                continue
+            # YARN literal — handles LOLCODE escapes AND bare colons
+            if remaining.startswith('"'):
+                j = 1
+                closed = False
+                while j < len(remaining):
+                    if remaining[j] == ':' and j + 1 < len(remaining) and remaining[j + 1] in ')>:"':
+                        if remaining[j + 1] == '"' and (j + 2 >= len(remaining) or remaining[j + 2] in ' \t\r\n+,'):
+                            j += 1
+                        else:
+                            j += 2
+                    elif remaining[j] == '"':
+                        j += 1
+                        closed = True
+                        break
+                    else:
+                        j += 1
+
+                if closed:
+                    tokens.append(Token(TT_YARN, remaining[:j], line_num))
+                    pos += j
+                    continue
+                else:
+                    self.errors.append(f'Line {line_num}: Unterminated YARN literal')
+                    tokens.append(Token(TT_UNKNOWN, remaining, line_num))
+                    pos += len(remaining)
+                    continue
 
             # NUMBAR literal (float)
             numbar_match = re.match(r'^-?[0-9]+\.[0-9]+', remaining)
