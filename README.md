@@ -23,7 +23,7 @@ A complete LOLCODE interpreter developed for **CMSC 124 - S-3L (Group EJDB)**. I
 
 ```text
 CMSC124_PROJECT/
-├── src/
+├── "source code"/
 │   ├── gui.py             # Tkinter graphical application
 │   ├── lexer/
 │   │   ├── lexer.py       # Lexical analyzer
@@ -63,7 +63,7 @@ The interpreter does not require third-party Python packages.
 From the project root:
 
 ```bash
-python3 src/gui.py
+python3 "source code"/gui.py
 ```
 
 The GUI lets you:
@@ -82,21 +82,21 @@ You can also open the project root with the built-in file browser and navigate d
 Execute a LOLCODE program:
 
 ```bash
-cd src
+cd "source code"
 python3 -m interpreter.interpreter given_test/01_variables.lol
 ```
 
 Tokenize and display the lexemes:
 
 ```bash
-cd src
+cd "source code"
 python3 -m lexer.lexer given_test/01_variables.lol
 ```
 
 Parse and display the syntax tree:
 
 ```bash
-cd src
+cd "source code"
 python3 -m parser.parser given_test/01_variables.lol
 ```
 
@@ -118,8 +118,8 @@ KTHXBYE
 
 The repository includes several groups of `.lol` programs:
 
-- `src/given_test/` - Required baseline interpreter tests
-- `src/additional_test/` - Supplemental syntax and edge-case tests
+- `"source code"/given_test/` - Required baseline interpreter tests
+- `"source code"/additional_test/` - Supplemental syntax and edge-case tests
 - `bonus/` - Standard bonus feature tests
 - `own_test/` - Team-created test programs
 - `own_bonus/` - Team-created bonus programs
@@ -127,7 +127,7 @@ The repository includes several groups of `.lol` programs:
 Run a test file with the GUI or through the interpreter CLI:
 
 ```bash
-cd src
+cd "source code"
 python3 -m interpreter.interpreter given_test/10_functions.lol
 python3 -m interpreter.interpreter ../bonus/ec08_array.lol
 ```
